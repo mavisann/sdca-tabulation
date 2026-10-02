@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mr. &amp; Ms. SDCA Tabulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+    <main class="flex flex-col items-center justify-center min-h-screen p-4">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Mr. &amp; Ms. SDCA Tabulation</h1>
+            <p class="text-slate-500 text-lg">Select your role to access the system</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+            <a href="./admin.html" class="group relative flex flex-col items-center p-10 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-500 transition-all text-center">
+                <div class="bg-blue-100 text-blue-600 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform"><i class="ph ph-user-gear text-4xl"></i></div>
+                <h2 class="text-2xl font-semibold mb-2">Management Admin</h2>
+                <p class="text-slate-500 text-sm">Control the stage, manage candidates, and oversee leaderboards.</p>
+            </a>
+            <a href="./judge.html" class="group relative flex flex-col items-center p-10 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-500 transition-all text-center">
+                <div class="bg-indigo-100 text-indigo-600 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform"><i class="ph ph-scales text-4xl"></i></div>
+                <h2 class="text-2xl font-semibold mb-2">Pageant Judge</h2>
+                <p class="text-slate-500 text-sm">Score active candidates, submit remarks, and view live results.</p>
+            </a>
+        </div>
+    </main>
+</body>
+</html>

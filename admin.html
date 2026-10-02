@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+    <!-- Admin View -->
+    <div id="admin-view" class="flex flex-col h-screen">
+        <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+            <div class="flex items-center gap-3">
+                <i class="ph ph-user-gear text-2xl text-blue-600"></i>
+                <h1 class="text-xl font-bold text-slate-800">Admin Dashboard</h1>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="resetData()" class="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">Reset Data</button>
+                <button onclick="switchRole()" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Switch Role</button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-hidden p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                
+                <!-- Column 1: Candidate CRUD -->
+                <div class="lg:col-span-3 flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+                        <h2 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="ph ph-users text-blue-500"></i> Candidate Management
+                        </h2>
+                    </div>
+                    <div class="p-4 border-b border-slate-100">
+                        <form id="candidate-form" onsubmit="saveCandidate(event)" class="flex flex-col gap-3">
+                            <input type="hidden" id="candidate-id">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Candidate Name</label>
+                                <input type="text" id="candidate-name" required placeholder="Enter name..." class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Image URL</label>
+                                <input type="url" id="candidate-image" required placeholder="https://..." class="w-full text-sm border border-slate-200 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div class="flex gap-2 mt-1">
+                                <button type="submit" id="btn-save-candidate" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg transition-colors">Add Candidate</button>
+                                <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden px-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors"><i class="ph ph-x"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-2" id="admin-candidate-list">
+                        <!-- Candidate List Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Column 2: Stage Control -->
+                <div class="lg:col-span-6 flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                        <h2 class="font-semibold text-slate-800 flex items-center gap-2">
+                            <i class="ph ph-presentation-chart text-blue-500"></i> Stage Control
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium text-slate-500">Theme:</label>
+                            <select id="stage-theme" onchange="updateStageTheme()" class="text-sm border border-slate-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium text-slate-700">
+                                <option value="Casual Wear">Casual Wear</option>
+                                <option value="Formal Wear">Formal Wear</option>
+                                <option value="Talent Portion">Talent Portion</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="p-4 flex-1 overflow-y-auto custom-scrollbar">
+                        <div class="flex items-center justify-between mb-4">
+                            <p class="text-sm text-slate-500">Select a candidate to push to the live stage.</p>
+                            <button onclick="clearStage()" class="text-xs font-medium px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-md transition-colors">Clear Stage</button>
+                        </div>
+                        <div id="admin-stage-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <!-- Stage Grid Injected via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 3: Live Leaderboard (Shared structure) -->
+                <div class="lg:col-span-3 flex flex-col bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                        <h2 class="font-semibold text-blue-900 flex items-center gap-2">
+                            <i class="ph ph-trophy text-blue-600"></i> Live Leaderboard
+                        </h2>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-3" id="admin-leaderboard">
+                        <!-- Leaderboard Injected via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="./js/app.js"></script>
+    <script src="./js/leaderboard.js"></script>
+    <script src="./js/admin.js"></script>
+</body>
+</html>
