@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Live Finalists | Mr. &amp; Ms. SDCA Tabulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="min-h-screen bg-slate-950 text-white">
+    <header class="border-b border-white/10 bg-slate-950/90">
+        <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
+            <div class="flex items-center gap-3">
+                <span class="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-500 text-white"><i class="fa-solid fa-crown text-xl"></i></span>
+                <span><span class="block text-sm font-bold">Mr. &amp; Ms. SDCA</span><span class="block text-xs text-slate-400">Live audience ranking</span></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="./mr_ms_sdca_tabulation.html" class="rounded-xl border border-white/15 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10"><i class="fa-solid fa-arrow-left mr-2"></i>Back</a>
+                <span class="rounded-full bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-200">Audience leaderboard</span>
+            </div>
+        </div>
+    </header>
+    <main class="mx-auto flex min-h-[calc(100vh-81px)] max-w-7xl flex-col px-5 py-10 sm:px-8 lg:py-14">
+        <section class="mb-10 text-center">
+            <p class="mb-3 text-xs font-bold uppercase tracking-[.3em] text-indigo-300">The journey to the crown</p>
+            <h1 class="text-4xl font-extrabold tracking-tight sm:text-6xl">Top 3 finalists</h1>
+            <p id="audience-theme" class="mt-4 text-sm font-medium text-slate-400"></p>
+        </section>
+        <section id="audience-podium" aria-label="Top three contestants" class="mx-auto grid w-full max-w-5xl items-end gap-5 sm:grid-cols-3"></section>
+        <p class="mt-10 text-center text-xs text-slate-500">Rankings update live · Scores remain confidential</p>
+    </main>
+    <script src="./js/navigation.js"></script>
+    <script src="./js/app.js"></script>
+    <script src="./js/audience.js"></script>
+</body>
+</html>

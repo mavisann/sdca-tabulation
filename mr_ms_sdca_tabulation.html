@@ -3,30 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f8fafc">
     <title>Mr. &amp; Ms. SDCA Tabulation</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
-    <main class="flex flex-col items-center justify-center min-h-screen p-4">
-        <div class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Mr. &amp; Ms. SDCA Tabulation</h1>
-            <p class="text-slate-500 text-lg">Select your role to access the system</p>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+    <main class="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <div class="mb-10 text-center">
+            <span class="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-3xl bg-indigo-600 text-white shadow-lg shadow-indigo-200"><i class="fa-solid fa-crown text-2xl"></i></span>
+            <h1 class="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Mr. &amp; Ms. SDCA Tabulation</h1>
+            <p class="mt-3 text-slate-500">Choose a view to continue</p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-            <a href="./admin.html" class="group relative flex flex-col items-center p-10 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-500 transition-all text-center">
-                <div class="bg-blue-100 text-blue-600 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform"><i class="ph ph-user-gear text-4xl"></i></div>
-                <h2 class="text-2xl font-semibold mb-2">Management Admin</h2>
-                <p class="text-slate-500 text-sm">Control the stage, manage candidates, and oversee leaderboards.</p>
+        <div class="grid w-full max-w-5xl gap-4 md:grid-cols-3">
+            <a href="./admin.html" class="group rounded-2xl border border-slate-100 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg">
+                <span class="grid h-12 w-12 place-items-center rounded-2xl bg-indigo-50 text-indigo-600"><i class="fa-solid fa-user-gear text-xl"></i></span>
+                <h2 class="mt-5 text-xl font-bold text-slate-900">Admin</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Manage contestant details, select the stage theme, and control contestants on stage.</p>
+                <span class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600">Open management <i class="fa-solid fa-arrow-right text-xs transition group-hover:translate-x-1"></i></span>
             </a>
-            <a href="./judge.html" class="group relative flex flex-col items-center p-10 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-500 transition-all text-center">
-                <div class="bg-indigo-100 text-indigo-600 p-4 rounded-full mb-4 group-hover:scale-110 transition-transform"><i class="ph ph-scales text-4xl"></i></div>
-                <h2 class="text-2xl font-semibold mb-2">Pageant Judge</h2>
-                <p class="text-slate-500 text-sm">Score active candidates, submit remarks, and view live results.</p>
+            <a href="./judge.html" class="group rounded-2xl border border-slate-100 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg">
+                <span class="grid h-12 w-12 place-items-center rounded-2xl bg-indigo-50 text-indigo-600"><i class="fa-solid fa-scale-balanced text-xl"></i></span>
+                <h2 class="mt-5 text-xl font-bold text-slate-900">Judge</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Score each contestant using the three official criteria and submit remarks.</p>
+                <span class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600">Open scoring panel <i class="fa-solid fa-arrow-right text-xs transition group-hover:translate-x-1"></i></span>
+            </a>
+            <a href="./audience.html" class="group rounded-2xl border border-slate-100 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg">
+                <span class="grid h-12 w-12 place-items-center rounded-2xl bg-amber-50 text-amber-600"><i class="fa-solid fa-trophy text-xl"></i></span>
+                <h2 class="mt-5 text-xl font-bold text-slate-900">Audience Leaderboard</h2>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Show the live Top 3 podium on a projector without revealing scores.</p>
+                <span class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600">Open live rankings <i class="fa-solid fa-arrow-right text-xs transition group-hover:translate-x-1"></i></span>
             </a>
         </div>
+        <p class="mt-8 max-w-xl text-center text-xs leading-5 text-slate-400">Open each view in a separate tab or window to test live synchronization. This version stores data in the current browser.</p>
     </main>
 </body>
 </html>

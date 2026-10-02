@@ -1,6 +1,19 @@
 body { font-family: 'Inter', sans-serif; }
-        /* Custom scrollbar for inner containers */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.score-options {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.score-option { cursor: pointer; }
+.score-option input:focus-visible + span { outline: 3px solid #c7d2fe; outline-offset: 2px; }
+
+@media (min-width: 640px) {
+    .score-options { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+}
