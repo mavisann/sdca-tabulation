@@ -7,10 +7,12 @@ const app = express();
 const publicDirectory = path.join(__dirname, 'public');
 
 app.get('/api/config', (req, res) => {
-    res.json({
-        supabaseUrl: process.env.SUPABASE_URL || null,
-        supabaseAnonKey: process.env.SUPABASE_ANON_KEY || null
-    });
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL || '',
+    supabaseAnonKey: process.env.SUPABASE_PUBLISHABLE_KEY
+      || process.env.SUPABASE_ANON_KEY
+      || ''
+  });
 });
 
 app.use(express.static(publicDirectory));

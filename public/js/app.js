@@ -16,7 +16,10 @@ async function initializeSupabase() {
 
     const config = await response.json();
     if (!config.supabaseUrl || !config.supabaseAnonKey) {
-        throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
+        throw new Error(
+            'Supabase configuration is missing. Set SUPABASE_URL and either ' +
+            'SUPABASE_PUBLISHABLE_KEY or SUPABASE_ANON_KEY in your server environment.'
+        );
     }
     if (!window.supabase?.createClient) {
         throw new Error('The Supabase JavaScript library did not load.');
@@ -70,7 +73,10 @@ async function syncData() {
 
 function handleSyncError(error) {
     console.error('Supabase synchronization failed:', error);
-    showAppMessage('Could not synchronize data with Supabase. Please try again.', 'error');
+    const reason = error instanceof Error
+        ? error.message
+        : error?.message || 'Unknown error';
+    showAppMessage(`Supabase sync failed: ${reason}`, 'error');
 }
 
 function handleWriteError(error, action) {
