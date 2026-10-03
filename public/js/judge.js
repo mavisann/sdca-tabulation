@@ -61,7 +61,7 @@ function renderJudge() {
     document.getElementById('judge-theme-badge').textContent = activeStage.currentTheme;
 }
 
-function submitScores(event) {
+async function submitScores(event) {
     event.preventDefault();
     const candidate = candidates.find(item => item.id === activeStage.activeCandidateId);
     if (!candidate) {
@@ -88,12 +88,22 @@ function submitScores(event) {
     values.remarks = document.getElementById('score-remarks').value.trim();
     values.total = values.poise + values.presence + values.qa;
     values.submittedAt = new Date().toISOString();
-    scores[candidate.id] ??= {};
-    scores[candidate.id][activeStage.currentTheme] = values;
-
     try {
-        saveState();
-    } catch {
+        const { error } = await db.from('scores').insert({
+            candidate_id: candidate.id,
+            theme: activeStage.currentTheme,
+            poise: values.poise,
+            presence: values.presence,
+            qa: values.qa,
+            remarks: values.remarks,
+            total: values.total,
+            submitted_at: values.submittedAt
+        });
+        if (error) throw error;
+        await syncData();
+        renderAll();
+    } catch (error) {
+        handleWriteError(error, 'submit the score');
         return;
     }
     showAppMessage('Score submitted successfully.');

@@ -1,0 +1,27 @@
+{
+  "name": "sdca-tabulation",
+  "version": "1.0.0",
+  "description": "Live Mr. & Ms. SDCA pageant tabulation system",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mavisann/sdca-tabulation.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mavisann/sdca-tabulation/issues"
+  },
+  "homepage": "https://github.com/mavisann/sdca-tabulation#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1"
+  }
+}

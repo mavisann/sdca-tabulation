@@ -126,7 +126,7 @@ async function saveCandidate(event) {
         return;
     }
     if (photoFile && photoFile.size > MAX_IMAGE_SIZE) {
-        showAppMessage('Choose an image smaller than 1.5 MB to fit browser storage.', 'error');
+        showAppMessage('Choose an image smaller than 1.5 MB.', 'error');
         return;
     }
 
@@ -138,18 +138,20 @@ async function saveCandidate(event) {
         return;
     }
 
-    if (existing) {
-        Object.assign(existing, { name, program, image });
-    } else {
-        candidates.push({ id: createCandidateId(), name, program, image });
-    }
-
     try {
-        saveState();
+        const candidate = { id: id || createCandidateId(), name, program, image };
+        const result = existing
+            ? await db.from('candidates')
+                .update({ name, program, image })
+                .eq('id', id)
+            : await db.from('candidates').insert(candidate);
+        if (result.error) throw result.error;
+        await syncData();
+        renderAll();
         cancelEdit();
         showAppMessage(existing ? 'Candidate updated.' : 'Candidate added.');
-    } catch {
-        return;
+    } catch (error) {
+        handleWriteError(error, existing ? 'update the candidate' : 'add the candidate');
     }
 }
 
@@ -179,39 +181,81 @@ function cancelEdit() {
     showPhotoPreview('');
 }
 
-function deleteCandidate(id) {
+async function deleteCandidate(id) {
     const candidate = candidates.find(item => item.id === id);
     if (!candidate || !window.confirm(`Delete ${candidate.name}?`)) return;
-    candidates = candidates.filter(item => item.id !== id);
-    delete scores[id];
-    if (activeStage.activeCandidateId === id) activeStage.activeCandidateId = null;
-    saveState();
-    showAppMessage('Candidate deleted.');
+    try {
+        const { error } = await db.from('candidates').delete().eq('id', id);
+        if (error) throw error;
+        await syncData();
+        renderAll();
+        showAppMessage('Candidate deleted.');
+    } catch (error) {
+        handleWriteError(error, 'delete the candidate');
+    }
+}
+
+async function persistStage(nextStage) {
+    try {
+        const { error } = await db.from('active_stage').upsert({
+            id: true,
+            active_candidate_id: nextStage.activeCandidateId,
+            current_theme: nextStage.currentTheme,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+        if (error) throw error;
+        await syncData();
+        renderAll();
+    } catch (error) {
+        handleWriteError(error, 'update the stage');
+    }
 }
 
 function updateStageTheme() {
-    activeStage.currentTheme = document.getElementById('stage-theme').value;
-    saveState();
+    return persistStage({
+        ...activeStage,
+        currentTheme: document.getElementById('stage-theme').value
+    });
 }
 
 function setStageCandidate(id) {
-    activeStage.activeCandidateId = id;
-    saveState();
+    return persistStage({ ...activeStage, activeCandidateId: id });
 }
 
 function clearStage() {
-    activeStage.activeCandidateId = null;
-    saveState();
+    return persistStage({ ...activeStage, activeCandidateId: null });
 }
 
-function resetData() {
+async function resetData() {
     if (!window.confirm('Clear all candidates, stage selections, and scores? This cannot be undone.')) return;
-    [STORAGE_KEY_CANDIDATES, STORAGE_KEY_STAGE, STORAGE_KEY_SCORES,
-        'sdca_candidates', 'sdca_stage', 'sdca_scores'].forEach(key => localStorage.removeItem(key));
-    initializeData();
-    renderAll();
-    cancelEdit();
-    showAppMessage('Data cleared. Add candidates when ready.');
+    try {
+        const scoreDelete = await db.from('scores').delete().not('candidate_id', 'is', null);
+        if (scoreDelete.error) throw scoreDelete.error;
+
+        const candidateDelete = await db.from('candidates').delete().not('id', 'is', null);
+        if (candidateDelete.error) throw candidateDelete.error;
+
+        const stageReset = await db.from('active_stage').upsert({
+            id: true,
+            active_candidate_id: null,
+            current_theme: DEFAULT_THEME,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+        if (stageReset.error) throw stageReset.error;
+
+        await syncData();
+        renderAll();
+        cancelEdit();
+        showAppMessage('Data cleared. Add candidates when ready.');
+    } catch (error) {
+        handleWriteError(error, 'clear the data');
+        try {
+            await syncData();
+            renderAll();
+        } catch (syncError) {
+            handleSyncError(syncError);
+        }
+    }
 }
 
 document.getElementById('candidate-form').addEventListener('submit', saveCandidate);

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f8fafc">
     <title>Admin Management | Mr. &amp; Ms. SDCA Tabulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -59,7 +60,7 @@
                     <div>
                         <label for="candidate-photo-file" class="mb-1.5 block text-sm font-semibold text-slate-700">Or upload a photo</label>
                         <input id="candidate-photo-file" name="photo" type="file" accept="image/*" class="block w-full cursor-pointer rounded-xl border border-slate-200 bg-white text-sm text-slate-600 file:mr-3 file:border-0 file:bg-indigo-50 file:px-3 file:py-2.5 file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100">
-                        <p class="mt-1.5 text-xs text-slate-500">Image files up to 1.5 MB are stored in this browser.</p>
+                        <p class="mt-1.5 text-xs text-slate-500">Image files up to 1.5 MB are saved with candidate details.</p>
                     </div>
                     <div class="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 p-3">
                         <img id="candidate-photo-preview" src="https://placehold.co/240x320/e0e7ff/3730a3?text=Candidate" alt="Candidate photo preview" class="h-24 w-20 rounded-lg bg-slate-100 object-contain">
