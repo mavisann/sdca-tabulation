@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#f8fafc">
     <title>Judge Panel | Mr. &amp; Ms. SDCA Tabulation</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
+<body class="min-h-screen bg-base-200 text-base-content">
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div class="flex items-center gap-3">
@@ -26,13 +27,22 @@
     </header>
 
     <main class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:py-8">
-        <section>
+        <section id="judge-login" class="mx-auto max-w-md rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+            <div class="mb-5"><p class="mb-2 text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Judge access</p><h1 class="text-2xl font-extrabold tracking-tight text-slate-950">Enter your judge code</h1><p class="mt-2 text-sm leading-6 text-slate-500">Use the code assigned to you by the administrator.</p></div>
+            <form id="judge-login-form" class="space-y-4">
+                <input id="judge-access-code" required minlength="4" maxlength="80" autocomplete="one-time-code" placeholder="Judge access code" class="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm uppercase tracking-[.2em] outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                <p id="judge-login-error" class="hidden text-sm font-semibold text-red-600"></p>
+                <button class="w-full rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-bold text-white hover:bg-indigo-700">Open judge panel</button>
+            </form>
+        </section>
+
+        <section data-judge-content class="hidden">
             <p class="mb-2 text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Official scoring</p>
             <h1 class="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Judge panel</h1>
             <p class="mt-2 text-sm text-slate-500">Scores are saved automatically and reflected in the live rankings.</p>
         </section>
 
-        <div class="grid gap-6 lg:grid-cols-12">
+        <div data-judge-content class="hidden grid gap-6 lg:grid-cols-12">
             <section class="lg:col-span-8">
                 <div id="judge-waiting" class="flex min-h-[440px] flex-col items-center justify-center rounded-2xl border border-slate-100 bg-white px-6 py-12 text-center shadow-sm">
                     <span class="mb-5 grid h-20 w-20 place-items-center rounded-full bg-indigo-50 text-indigo-600"><i class="fa-regular fa-hourglass-half text-4xl"></i></span>
@@ -41,8 +51,8 @@
                 </div>
 
                 <section id="judge-active" class="hidden overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-                    <div class="flex flex-col gap-5 border-b border-slate-100 bg-gradient-to-br from-indigo-50 to-white p-5 sm:flex-row sm:items-center sm:p-7">
-                        <img id="judge-cand-img" src="" alt="" class="h-64 w-48 rounded-2xl border-4 border-white bg-slate-100 object-contain shadow-sm sm:h-80 sm:w-60">
+                    <div class="flex flex-col gap-5 border-b border-base-300 bg-base-200 p-5 sm:flex-row sm:items-center sm:p-7">
+                        <img id="judge-cand-img" src="" alt="" class="h-64 w-48 rounded-2xl border-4 border-base-100 bg-base-300 object-contain shadow-sm sm:h-80 sm:w-60">
                         <div class="min-w-0">
                             <span id="judge-theme-badge" class="inline-flex rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-indigo-700"></span>
                             <p id="judge-cand-id" class="mt-4 text-sm font-bold uppercase tracking-wider text-slate-500"></p>
@@ -51,20 +61,8 @@
                         </div>
                     </div>
                     <form id="scoring-form" class="space-y-6 p-5 sm:p-7">
-                        <div class="space-y-5">
-                            <fieldset class="score-fieldset">
-                                <legend class="mb-3 text-sm font-bold text-slate-800">Poise &amp; Bearing <span class="font-normal text-slate-500">— confidence, posture, and grace</span></legend>
-                                <div id="score-poise-options" class="score-options"></div>
-                            </fieldset>
-                            <fieldset class="score-fieldset">
-                                <legend class="mb-3 text-sm font-bold text-slate-800">Stage Presence <span class="font-normal text-slate-500">— charisma, engagement, and energy</span></legend>
-                                <div id="score-presence-options" class="score-options"></div>
-                            </fieldset>
-                            <fieldset class="score-fieldset">
-                                <legend class="mb-3 text-sm font-bold text-slate-800">Q&amp;A <span class="font-normal text-slate-500">— articulation, relevance, and wit</span></legend>
-                                <div id="score-qa-options" class="score-options"></div>
-                            </fieldset>
-                        </div>
+                        <div class="flex items-center justify-between gap-3 rounded-xl border border-base-300 bg-base-200 px-4 py-3"><p id="judge-name" class="text-sm font-bold text-base-content"></p><i class="fa-solid fa-shield-check text-primary" aria-hidden="true"></i></div>
+                        <div id="score-criteria-options" class="space-y-5"></div>
                         <div>
                             <label for="score-remarks" class="mb-2 block text-sm font-bold text-slate-800">Judge's remarks / constructive feedback <span class="font-normal text-slate-400">(optional)</span></label>
                             <textarea id="score-remarks" rows="4" maxlength="1000" placeholder="Share brief, constructive feedback..." class="w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"></textarea>

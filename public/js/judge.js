@@ -1,18 +1,55 @@
-const SCORE_CATEGORIES = ['poise', 'presence', 'qa'];
 const JUDGE_PHOTO_FALLBACK = 'https://placehold.co/600x800/e0e7ff/3730a3?text=Candidate';
+let authenticatedJudge = null;
 
-function renderScoreOptions() {
-    SCORE_CATEGORIES.forEach(category => {
-        const container = document.getElementById(`score-${category}-options`);
-        container.innerHTML = Array.from({ length: 10 }, (_, index) => {
+function getJudgeName() {
+    return authenticatedJudge?.name || 'Judge 1';
+}
+
+function setJudgeContent(visible) {
+    document.getElementById('judge-login').classList.toggle('hidden', visible);
+    document.querySelectorAll('[data-judge-content]').forEach(element => {
+        element.classList.toggle('hidden', !visible);
+    });
+}
+
+async function requireJudgeLogin() {
+    setJudgeContent(false);
+    return new Promise(resolve => {
+        document.getElementById('judge-login-form').addEventListener('submit', async event => {
+            event.preventDefault();
+            const input = document.getElementById('judge-access-code');
+            const errorMessage = document.getElementById('judge-login-error');
+            errorMessage.classList.add('hidden');
+            const code = input.value.trim().toUpperCase();
+            const { data, error } = await db.rpc('authenticate_judge', { input_code: code });
+            if (error || !data?.[0]) {
+                errorMessage.textContent = 'That judge code is not active or was not found.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            authenticatedJudge = { id: data[0].id, name: data[0].name };
+            document.getElementById('judge-name').textContent = authenticatedJudge.name;
+            setJudgeContent(true);
+            resolve();
+        }, { once: true });
+    });
+}
+
+function renderScoreOptions(criteria = getThemeCriteria(activeStage.currentTheme)) {
+    const container = document.getElementById('score-criteria-options');
+    if (!container) return;
+    container.innerHTML = criteria.map((criterion, criterionIndex) => `
+        <fieldset class="score-fieldset rounded-2xl border border-base-300 bg-base-200 p-4">
+            <legend class="mb-3 flex w-full items-center justify-between gap-3 text-sm font-bold text-base-content"><span>${escapeHtml(criterion.name)}</span><span class="badge badge-primary badge-sm font-extrabold">1–${criterion.maxScore}</span></legend>
+            <div class="score-options">${Array.from({ length: criterion.maxScore }, (_, index) => {
             const value = index + 1;
             return `
                 <label class="score-option">
-                    <input class="peer sr-only" type="radio" name="score-${category}" value="${value}" required>
-                    <span class="grid h-10 place-items-center rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:border-indigo-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white peer-focus-visible:ring-4 peer-focus-visible:ring-indigo-100">${value}</span>
+                    <input class="peer sr-only" type="radio" name="score-criterion-${criterionIndex}" value="${value}" required>
+                    <span class="grid h-11 place-items-center rounded-lg border border-base-300 bg-base-100 text-sm font-bold text-base-content transition hover:border-primary peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-content peer-focus-visible:ring-4 peer-focus-visible:ring-primary/30">${value}</span>
                 </label>`;
-        }).join('');
-    });
+        }).join('')}</div>
+        </fieldset>`).join('');
 }
 
 function showJudgeWaiting(title, copy) {
@@ -34,17 +71,21 @@ function renderJudge() {
         return;
     }
 
-    const scoreKey = `${candidate.id}_${activeStage.currentTheme}`;
-    if (scores[candidate.id]?.[activeStage.currentTheme]) {
-        document.getElementById('scoring-form').dataset.scoreKey = '';
+    const scoreKey = `${candidate.id}_${activeStage.currentTheme}_${activeStage.updatedAt || 'new'}`;
+    const form = document.getElementById('scoring-form');
+    renderScoreOptions();
+    const hasScored = (scores[candidate.id]?.[activeStage.currentTheme] || [])
+        .some(score => authenticatedJudge?.id
+            ? score.judgeId === authenticatedJudge.id
+            : score.judgeName === getJudgeName());
+    if (hasScored) {
+        form.dataset.scoreKey = '';
         showJudgeWaiting(
             'Score submitted — awaiting next contestant',
-            `${candidate.name} has already been scored for ${activeStage.currentTheme}. You can continue when the stage manager selects another contestant.`
+            `${candidate.name} has already been scored for ${getThemeName(activeStage.currentTheme)} by ${getJudgeName()}. You can continue when the stage manager selects another contestant or theme.`
         );
         return;
     }
-
-    const form = document.getElementById('scoring-form');
     if (form.dataset.scoreKey !== scoreKey) {
         form.reset();
         form.dataset.scoreKey = scoreKey;
@@ -58,7 +99,7 @@ function renderJudge() {
     document.getElementById('judge-cand-id').textContent = candidate.id;
     document.getElementById('judge-cand-name').textContent = candidate.name;
     document.getElementById('judge-cand-program').textContent = candidate.program;
-    document.getElementById('judge-theme-badge').textContent = activeStage.currentTheme;
+    document.getElementById('judge-theme-badge').textContent = getThemeName(activeStage.currentTheme);
 }
 
 async function submitScores(event) {
@@ -69,32 +110,41 @@ async function submitScores(event) {
         return;
     }
 
-    if (scores[candidate.id]?.[activeStage.currentTheme]) {
-        renderJudge();
-        showAppMessage('This contestant has already been scored for this theme.', 'error');
-        return;
-    }
-
+    const criteria = getThemeCriteria(activeStage.currentTheme);
     const values = {};
-    for (const category of SCORE_CATEGORIES) {
-        const selected = document.querySelector(`input[name="score-${category}"]:checked`);
+    for (const [criterionIndex, criterion] of criteria.entries()) {
+        const selected = document.querySelector(`input[name="score-criterion-${criterionIndex}"]:checked`);
         if (!selected) {
-            showAppMessage('Select a score from 1 to 10 for each category.', 'error');
+            showAppMessage('Select a score for every scoring basis.', 'error');
             return;
         }
-        values[category] = Number(selected.value);
+        values[criterion.id || criterion.name] = Number(selected.value);
     }
 
     values.remarks = document.getElementById('score-remarks').value.trim();
-    values.total = values.poise + values.presence + values.qa;
+    values.total = criteria.reduce(
+        (total, criterion) => total + Number(values[criterion.id || criterion.name] || 0),
+        0
+    );
     values.submittedAt = new Date().toISOString();
     try {
+        const scoreValues = criteria.map(criterion => values[criterion.id || criterion.name]);
         const { error } = await db.from('scores').insert({
             candidate_id: candidate.id,
             theme: activeStage.currentTheme,
-            poise: values.poise,
-            presence: values.presence,
-            qa: values.qa,
+            judge_id: authenticatedJudge.id,
+            judge_name: getJudgeName(),
+            poise: scoreValues[0] ?? null,
+            presence: scoreValues[1] ?? null,
+            qa: scoreValues[2] ?? null,
+            criteria: Object.fromEntries(criteria.map(criterion => [
+                criterion.id || criterion.name,
+                {
+                    name: criterion.name,
+                    maxScore: criterion.maxScore,
+                    value: values[criterion.id || criterion.name]
+                }
+            ])),
             remarks: values.remarks,
             total: values.total,
             submitted_at: values.submittedAt
@@ -109,6 +159,5 @@ async function submitScores(event) {
     showAppMessage('Score submitted successfully.');
 }
 
-renderScoreOptions();
 document.getElementById('scoring-form').addEventListener('submit', submitScores);
 initApp('judge');

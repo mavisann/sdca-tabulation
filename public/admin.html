@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#f8fafc">
     <title>Admin Management | Mr. &amp; Ms. SDCA Tabulation</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
+<body class="min-h-screen bg-base-200 text-base-content">
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div class="flex items-center gap-3">
@@ -20,12 +21,21 @@
             </div>
             <div class="flex items-center gap-2">
                 <a href="./mr_ms_sdca_tabulation.html" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-arrow-left mr-2"></i>Back</a>
-                <button id="btn-reset-data" type="button" class="rounded-xl border border-red-100 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Reset data</button>
             </div>
         </div>
     </header>
 
     <main class="mx-auto max-w-[1600px] space-y-6 px-4 py-6 sm:px-6 lg:py-8">
+        <nav id="admin-tabs" class="flex flex-wrap gap-2 border-b border-slate-200 pb-3" aria-label="Admin sections">
+            <button type="button" data-admin-tab="candidates" class="admin-tab rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white">Candidate management</button>
+            <button type="button" data-admin-tab="stage" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Stage controls</button>
+            <button type="button" data-admin-tab="themes" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Themes</button>
+            <button type="button" data-admin-tab="criteria" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Score basis</button>
+            <button type="button" data-admin-tab="leaderboard" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Live leaderboard</button>
+            <button type="button" data-admin-tab="scorebook" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Scorebook</button>
+            <button type="button" data-admin-tab="judges" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Judges</button>
+        </nav>
+
         <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div>
                 <p class="mb-2 text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Competition control</p>
@@ -37,8 +47,8 @@
             </div>
         </section>
 
-        <div class="grid gap-6 xl:grid-cols-12">
-            <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm xl:col-span-4">
+        <div class="space-y-6">
+            <section data-admin-panel="candidates" class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm xl:col-span-4">
                 <div class="mb-5">
                     <h2 class="text-lg font-bold text-slate-900">Candidate management</h2>
                     <p class="mt-1 text-sm text-slate-500">Add contestant details and choose a profile photo.</p>
@@ -87,7 +97,7 @@
             </section>
 
             <div class="space-y-6 xl:col-span-8">
-                <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <section data-admin-panel="stage" class="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                     <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                         <div>
                             <h2 class="text-lg font-bold text-slate-900">Stage control</h2>
@@ -107,7 +117,7 @@
                     <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" id="admin-stage-grid"></div>
                 </section>
 
-                <section class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+                <section data-admin-panel="leaderboard" class="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
                     <div class="mb-4 flex items-center gap-3">
                         <span class="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600"><i class="fa-solid fa-trophy text-xl"></i></span>
                         <div><h2 class="font-bold text-slate-900">Live leaderboard</h2><p class="text-xs text-slate-500">Rankings update as scores are submitted. Points are confidential.</p></div>
@@ -116,6 +126,54 @@
                 </section>
             </div>
         </div>
+
+        <section data-admin-panel="themes" class="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div class="mb-5">
+                <h2 class="text-lg font-bold text-slate-900">Theme management</h2>
+                <p class="mt-1 text-sm text-slate-500">Create, rename, reorder, or remove competition stages.</p>
+            </div>
+            <form id="theme-form" class="grid gap-3 sm:grid-cols-[1fr_8rem_auto_auto]">
+                <input type="hidden" id="theme-id">
+                <input id="theme-name" required maxlength="80" placeholder="Theme name" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                <input id="theme-order" required type="number" min="0" value="0" placeholder="Order" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                <button class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Save theme</button>
+                <button id="btn-cancel-theme" type="button" class="hidden rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
+            </form>
+            <div class="mt-6 overflow-x-auto"><table class="w-full text-left"><thead><tr class="text-[11px] uppercase tracking-wide text-slate-400"><th class="px-3 py-2">Theme</th><th class="px-3 py-2">Order</th><th class="px-3 py-2">Actions</th></tr></thead><tbody id="theme-list-body"></tbody></table></div>
+        </section>
+
+        <section data-admin-panel="criteria" class="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div class="mb-5"><h2 class="text-lg font-bold text-slate-900">Score basis management</h2><p class="mt-1 text-sm text-slate-500">Define the scoring criteria and maximum points for each theme.</p></div>
+            <form id="criteria-form" class="grid gap-3 sm:grid-cols-[1fr_1fr_8rem_auto_auto]">
+                <input type="hidden" id="criteria-id">
+                <select id="criteria-theme" required class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"></select>
+                <input id="criteria-name" required maxlength="80" placeholder="Criterion name" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                <input id="criteria-max-score" required type="number" min="1" max="100" value="10" placeholder="Max" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                <button class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Save basis</button>
+                <button id="btn-cancel-criteria" type="button" class="hidden rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
+            </form>
+            <div class="mt-6 overflow-x-auto"><table class="w-full text-left"><thead><tr class="text-[11px] uppercase tracking-wide text-slate-400"><th class="px-3 py-2">Theme</th><th class="px-3 py-2">Criterion</th><th class="px-3 py-2">Maximum</th><th class="px-3 py-2">Actions</th></tr></thead><tbody id="criteria-list-body"></tbody></table></div>
+        </section>
+
+        <section data-admin-panel="scorebook" class="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div class="mb-5"><h2 class="text-lg font-bold text-slate-900">Candidate scorebook</h2><p class="mt-1 text-sm text-slate-500">Select a candidate to review every theme, judge score, and remark.</p></div>
+            <div class="grid gap-6 lg:grid-cols-[minmax(16rem,24rem)_1fr]">
+                <div id="scorebook-list" class="space-y-2"></div>
+                <div id="scorebook-details" class="min-h-48 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5"><p class="text-sm text-slate-500">Select a candidate to view detailed scores.</p></div>
+            </div>
+        </section>
+
+        <section data-admin-panel="judges" class="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <div class="mb-5"><h2 class="text-lg font-bold text-slate-900">Judge accounts</h2><p class="mt-1 text-sm text-slate-500">Create judge identities and access codes. Give each active judge a unique code.</p></div>
+            <form id="judge-form" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+                <input type="hidden" id="judge-id">
+                <input id="judge-account-name" required maxlength="80" placeholder="Judge name" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                <input id="judge-account-code" required maxlength="80" placeholder="Access code" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm uppercase tracking-[.15em] outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                <label class="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-600"><input id="judge-account-active" type="checkbox" checked class="h-4 w-4 accent-indigo-600"> Active</label>
+                <button class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Save judge</button>
+            </form>
+            <div class="mt-6 overflow-x-auto"><table class="w-full text-left"><thead><tr class="text-[11px] uppercase tracking-wide text-slate-400"><th class="px-3 py-2">Judge</th><th class="px-3 py-2">Access code</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Actions</th></tr></thead><tbody id="judge-list-body"></tbody></table></div>
+        </section>
     </main>
 
     <div id="app-message" role="status" aria-live="polite" class="hidden"></div>

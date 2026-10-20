@@ -1,4 +1,52 @@
-body { font-family: 'Inter', sans-serif; }
+body { font-family: 'DM Sans', sans-serif; min-width: 320px; background: hsl(var(--b2)) !important; color: hsl(var(--bc)) !important; }
+
+html { color-scheme: light; background: hsl(var(--b2)); }
+html[data-theme='night'] { color-scheme: dark; }
+html[data-theme='light'] {
+    --p: 214 88% 52%;
+    --pf: 217 82% 45%;
+    --pc: 0 0% 100%;
+}
+html[data-theme='night'] {
+    --p: 199 89% 48%;
+    --pf: 199 89% 40%;
+    --pc: 0 0% 100%;
+}
+
+.theme-toggle { min-width: 2.5rem; }
+
+/* DaisyUI semantic surfaces keep the existing Tailwind structure coherent in both themes. */
+body.bg-slate-50,
+body.bg-slate-950 { background: hsl(var(--b2)) !important; color: hsl(var(--bc)) !important; }
+.bg-white { background-color: hsl(var(--b1)) !important; }
+.bg-slate-50 { background-color: hsl(var(--b2)) !important; }
+.bg-slate-950 { background-color: hsl(var(--b3)) !important; }
+.text-slate-950,
+.text-slate-900,
+.text-slate-800 { color: hsl(var(--bc)) !important; }
+.text-slate-700,
+.text-slate-600,
+.text-slate-500,
+.text-slate-400 { color: color-mix(in srgb, hsl(var(--bc)) 64%, transparent) !important; }
+.border-slate-100,
+.border-slate-200 { border-color: hsl(var(--b3)) !important; }
+input, textarea, select { background-color: hsl(var(--b1)); color: hsl(var(--bc)); border-color: hsl(var(--b3)); }
+header { background-color: color-mix(in srgb, hsl(var(--b1)) 94%, transparent) !important; border-color: hsl(var(--b3)) !important; }
+html[data-theme='light'] body.bg-slate-950 .text-white { color: hsl(var(--bc)) !important; }
+html[data-theme='light'] body.bg-slate-950 .text-slate-400,
+html[data-theme='light'] body.bg-slate-950 .text-slate-500 { color: color-mix(in srgb, hsl(var(--bc)) 64%, transparent) !important; }
+html[data-theme='light'] .bg-slate-950 .border-white\/10 { border-color: hsl(var(--b3)) !important; }
+html[data-theme='night'] .bg-indigo-50,
+html[data-theme='night'] .bg-indigo-100,
+html[data-theme='night'] .bg-amber-50,
+html[data-theme='night'] .bg-emerald-50,
+html[data-theme='night'] .bg-red-50 { background-color: hsl(var(--b2)) !important; }
+html[data-theme='night'] .text-indigo-600,
+html[data-theme='night'] .text-indigo-700,
+html[data-theme='night'] .text-indigo-950 { color: hsl(var(--p)) !important; }
+
+button, a, [role='button'] { touch-action: manipulation; }
+button, [role='button'] { user-select: none; -webkit-user-select: none; }
 
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -11,9 +59,33 @@ body { font-family: 'Inter', sans-serif; }
     gap: 0.5rem;
 }
 
+#score-criteria-options { display: block; }
+.score-fieldset + .score-fieldset { margin-top: 1rem; }
+
 .score-option { cursor: pointer; }
 .score-option input:focus-visible + span { outline: 3px solid #c7d2fe; outline-offset: 2px; }
+.score-option span { transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease; }
+.score-option:hover span { border-color: hsl(var(--p)); }
+.score-option input:checked + span {
+    background-color: hsl(var(--p)) !important;
+    border-color: hsl(var(--p)) !important;
+    color: hsl(var(--pc)) !important;
+    box-shadow: 0 0 0 3px hsl(var(--p) / 0.18);
+    transform: translateY(-1px);
+}
 
 @media (min-width: 640px) {
     .score-options { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    main { width: min(100%, 1100px); }
+    header > div { padding-inline: 1.25rem; }
+    .score-options { gap: 0.625rem; }
+}
+
+@media (max-width: 767px) {
+    header > div { padding-inline: 1rem; }
+    table { min-width: 38rem; }
+    .theme-toggle { margin-left: auto; }
 }

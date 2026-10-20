@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#0f172a">
     <title>Live Finalists | Mr. &amp; Ms. SDCA Tabulation</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="min-h-screen bg-slate-950 text-white">
+<body class="min-h-screen bg-base-300 text-base-content">
     <header class="border-b border-white/10 bg-slate-950/90">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
             <div class="flex items-center gap-3">
@@ -29,6 +30,7 @@
             <p class="mb-3 text-xs font-bold uppercase tracking-[.3em] text-indigo-300">The journey to the crown</p>
             <h1 class="text-4xl font-extrabold tracking-tight sm:text-6xl">Top 3 finalists</h1>
             <p id="audience-theme" class="mt-4 text-sm font-medium text-slate-400"></p>
+            <p id="audience-status" class="mt-2 text-xs font-bold uppercase tracking-[.2em] text-emerald-300">Live ranking</p>
         </section>
         <section id="audience-podium" aria-label="Top three contestants" class="mx-auto grid w-full max-w-5xl items-end gap-5 sm:grid-cols-3"></section>
         <p class="mt-10 text-center text-xs text-slate-500">Rankings update live · Scores remain confidential</p>

@@ -1,8 +1,15 @@
 const DEFAULT_PHOTO = 'https://placehold.co/240x320/e0e7ff/3730a3?text=Candidate';
 const MAX_IMAGE_SIZE = 1.5 * 1024 * 1024;
 let previewObjectUrl = null;
+let selectedScorebookCandidateId = null;
 
 function renderAdmin() {
+    renderAdminTabs();
+    renderThemeSelect();
+    renderThemeCrud();
+    renderCriteriaCrud();
+    renderScorebook();
+    renderJudgesCrud();
     const themeSelect = document.getElementById('stage-theme');
     if (themeSelect && themeSelect.value !== activeStage.currentTheme) {
         themeSelect.value = activeStage.currentTheme;
@@ -10,6 +17,243 @@ function renderAdmin() {
     renderAdminCandidates();
     renderAdminStage();
     renderLeaderboard('admin-leaderboard');
+}
+
+function renderAdminTabs() {
+    document.querySelectorAll('[data-admin-tab]').forEach(button => {
+        if (button.dataset.bound) return;
+        button.dataset.bound = 'true';
+        button.addEventListener('click', () => {
+            const tab = button.dataset.adminTab;
+            document.querySelectorAll('[data-admin-panel]').forEach(panel => {
+                panel.classList.toggle('hidden', panel.dataset.adminPanel !== tab);
+            });
+            document.querySelectorAll('[data-admin-tab]').forEach(tabButton => {
+                const selected = tabButton === button;
+                tabButton.classList.toggle('bg-indigo-600', selected);
+                tabButton.classList.toggle('text-white', selected);
+                tabButton.classList.toggle('border', !selected);
+                tabButton.classList.toggle('border-slate-200', !selected);
+                tabButton.classList.toggle('bg-white', !selected);
+                tabButton.classList.toggle('text-slate-600', !selected);
+            });
+        });
+    });
+}
+
+function renderThemeSelect() {
+    const select = document.getElementById('stage-theme');
+    if (!select) return;
+    select.innerHTML = themes.map(theme => (
+        `<option value="${escapeHtml(theme.id)}">${escapeHtml(theme.name)}</option>`
+    )).join('');
+    select.value = activeStage.currentTheme;
+}
+
+function renderThemeCrud() {
+    const list = document.getElementById('theme-list-body');
+    if (!list) return;
+    list.innerHTML = themes.map(theme => `
+        <tr class="border-b border-slate-100 last:border-0">
+            <td class="px-3 py-3 text-sm font-semibold text-slate-800">${escapeHtml(theme.name)}</td>
+            <td class="px-3 py-3 text-sm text-slate-500">${theme.sortOrder}</td>
+            <td class="px-3 py-3"><div class="flex gap-2">
+                <button type="button" data-edit-theme="${escapeHtml(theme.id)}" class="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Edit</button>
+                <button type="button" data-delete-theme="${escapeHtml(theme.id)}" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">Delete</button>
+            </div></td>
+        </tr>`).join('');
+}
+
+function renderCriteriaCrud() {
+    const themeSelect = document.getElementById('criteria-theme');
+    const list = document.getElementById('criteria-list-body');
+    if (!themeSelect || !list) return;
+    const selectedTheme = themeSelect.value || activeStage.currentTheme || themes[0]?.id;
+    themeSelect.innerHTML = themes.map(theme => (
+        `<option value="${escapeHtml(theme.id)}">${escapeHtml(theme.name)}</option>`
+    )).join('');
+    themeSelect.value = themes.some(theme => theme.id === selectedTheme) ? selectedTheme : themes[0]?.id || '';
+    list.innerHTML = themes.flatMap(theme => (themeCriteria[theme.id] || []).map(criterion => `
+        <tr class="border-b border-slate-100 last:border-0">
+            <td class="px-3 py-3 text-sm font-semibold text-slate-700">${escapeHtml(theme.name)}</td>
+            <td class="px-3 py-3 text-sm text-slate-800">${escapeHtml(criterion.name)}</td>
+            <td class="px-3 py-3 text-sm text-slate-500">${criterion.maxScore}</td>
+            <td class="px-3 py-3"><div class="flex gap-2">
+                <button type="button" data-edit-criteria="${escapeHtml(criterion.id)}" data-criteria-theme="${escapeHtml(theme.id)}" class="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Edit</button>
+                <button type="button" data-delete-criteria="${escapeHtml(criterion.id)}" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">Delete</button>
+            </div></td>
+        </tr>`)).join('');
+}
+
+function slugify(value) {
+    return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+async function saveTheme(event) {
+    event.preventDefault();
+    const name = document.getElementById('theme-name').value.trim();
+    const id = document.getElementById('theme-id').value || slugify(name);
+    const sortOrder = Number(document.getElementById('theme-order').value || 0);
+    try {
+        const { error } = await db.from('themes').upsert({ id, name, sort_order: sortOrder }, { onConflict: 'id' });
+        if (error) throw error;
+        document.getElementById('theme-form').reset();
+        document.getElementById('theme-id').value = '';
+        document.getElementById('btn-cancel-theme').classList.add('hidden');
+        await syncData();
+        renderAll();
+        showAppMessage('Theme saved.');
+    } catch (error) {
+        handleWriteError(error, 'save the theme');
+    }
+}
+
+async function deleteTheme(id) {
+    const theme = themes.find(item => item.id === id);
+    if (!theme || !window.confirm(`Delete ${theme.name} and its scoring basis?`)) return;
+    if (activeStage.currentTheme === id) {
+        showAppMessage('Switch to another theme before deleting this active theme.', 'error');
+        return;
+    }
+    const hasScores = Object.values(scores).some(candidateScores => candidateScores[id]?.length);
+    if (hasScores) {
+        showAppMessage('This theme has saved scores and cannot be deleted.', 'error');
+        return;
+    }
+    try {
+        const { error } = await db.from('themes').delete().eq('id', id);
+        if (error) throw error;
+        await syncData();
+        renderAll();
+        showAppMessage('Theme deleted.');
+    } catch (error) {
+        handleWriteError(error, 'delete the theme');
+    }
+}
+
+async function saveCriteria(event) {
+    event.preventDefault();
+    const id = document.getElementById('criteria-id').value;
+    const themeId = document.getElementById('criteria-theme').value;
+    const payload = {
+        theme_id: themeId,
+        name: document.getElementById('criteria-name').value.trim(),
+        max_score: Number(document.getElementById('criteria-max-score').value || 10),
+        sort_order: (themeCriteria[themeId] || []).length
+    };
+    try {
+        const result = id
+            ? await db.from('theme_criteria').update(payload).eq('id', id)
+            : await db.from('theme_criteria').insert(payload);
+        if (result.error) throw result.error;
+        cancelCriteriaEdit();
+        await syncData();
+        renderAll();
+        showAppMessage('Scoring basis saved.');
+    } catch (error) {
+        handleWriteError(error, 'save the scoring basis');
+    }
+}
+
+async function deleteCriteria(id) {
+    if (!window.confirm('Delete this scoring basis?')) return;
+    try {
+        const { error } = await db.from('theme_criteria').delete().eq('id', id);
+        if (error) throw error;
+        await syncData();
+        renderAll();
+        showAppMessage('Scoring basis deleted.');
+    } catch (error) {
+        handleWriteError(error, 'delete the scoring basis');
+    }
+}
+
+function cancelCriteriaEdit() {
+    document.getElementById('criteria-form').reset();
+    document.getElementById('criteria-id').value = '';
+    document.getElementById('btn-cancel-criteria').classList.add('hidden');
+}
+
+function renderJudgesCrud() {
+    const list = document.getElementById('judge-list-body');
+    if (!list) return;
+    list.innerHTML = judges.map(judge => `
+        <tr class="border-b border-slate-100 last:border-0">
+            <td class="px-3 py-3 text-sm font-semibold text-slate-800">${escapeHtml(judge.name)}</td>
+            <td class="px-3 py-3 font-mono text-sm tracking-widest text-slate-600">${escapeHtml(judge.access_code)}</td>
+            <td class="px-3 py-3"><span class="rounded-full px-2.5 py-1 text-xs font-bold ${judge.active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${judge.active ? 'Active' : 'Inactive'}</span></td>
+            <td class="px-3 py-3"><div class="flex gap-2"><button type="button" data-edit-judge="${escapeHtml(judge.id)}" class="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Edit</button><button type="button" data-delete-judge="${escapeHtml(judge.id)}" class="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50">Delete</button></div></td>
+        </tr>`).join('');
+}
+
+async function saveJudge(event) {
+    event.preventDefault();
+    const name = document.getElementById('judge-account-name').value.trim();
+    const accessCode = document.getElementById('judge-account-code').value.trim().toUpperCase();
+    const id = document.getElementById('judge-id').value || `judge-${slugify(name)}`;
+    try {
+        const { error } = await db.from('judges').upsert({
+            id,
+            name,
+            access_code: accessCode,
+            active: document.getElementById('judge-account-active').checked
+        }, { onConflict: 'id' });
+        if (error) throw error;
+        document.getElementById('judge-form').reset();
+        document.getElementById('judge-id').value = '';
+        document.getElementById('judge-account-active').checked = true;
+        await syncData();
+        renderAll();
+        showAppMessage('Judge account saved.');
+    } catch (error) {
+        handleWriteError(error, 'save the judge account');
+    }
+}
+
+async function deleteJudge(id) {
+    const judge = judges.find(item => item.id === id);
+    if (!judge || !window.confirm(`Delete ${judge.name}'s judge account?`)) return;
+    try {
+        const { error } = await db.from('judges').delete().eq('id', id);
+        if (error) throw error;
+        await syncData();
+        renderAll();
+        showAppMessage('Judge account deleted.');
+    } catch (error) {
+        handleWriteError(error, 'delete the judge account');
+    }
+}
+
+function renderScorebook() {
+    const list = document.getElementById('scorebook-list');
+    const details = document.getElementById('scorebook-details');
+    if (!list || !details) return;
+    if (!selectedScorebookCandidateId && candidates[0]) selectedScorebookCandidateId = candidates[0].id;
+    list.innerHTML = candidates.map(candidate => {
+        const scoreCount = Object.values(scores[candidate.id] || {}).flat().length;
+        const selected = candidate.id === selectedScorebookCandidateId;
+        return `<button type="button" data-scorebook-candidate="${escapeHtml(candidate.id)}" class="w-full rounded-xl border p-4 text-left transition ${selected ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-200'}">
+            <span class="flex items-start justify-between gap-3"><span><span class="block text-sm font-bold text-slate-900">${escapeHtml(candidate.name)}</span><span class="mt-1 block text-xs text-slate-500">${escapeHtml(candidate.id)} · ${escapeHtml(candidate.program)}</span></span><span class="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">${scoreCount} score${scoreCount === 1 ? '' : 's'}</span></span>
+        </button>`;
+    }).join('');
+
+    const candidate = candidates.find(item => item.id === selectedScorebookCandidateId);
+    const themeScores = Object.entries(scores[selectedScorebookCandidateId] || {});
+    if (!candidate || themeScores.length === 0) {
+        details.innerHTML = '<p class="text-sm text-slate-500">No scores have been submitted for this candidate yet.</p>';
+        return;
+    }
+    details.innerHTML = `<div class="mb-5"><p class="text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Score details</p><h3 class="mt-1 text-2xl font-extrabold text-slate-950">${escapeHtml(candidate.name)}</h3><p class="mt-1 text-sm text-slate-500">${escapeHtml(candidate.program)}</p></div>${themeScores.map(([themeId, themeScoreRows]) => `
+        <section class="mb-5 last:mb-0 rounded-xl border border-slate-200 bg-white p-4">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-slate-900">${escapeHtml(getThemeName(themeId))}</h4><span class="text-xs font-semibold text-slate-500">${themeScoreRows.length} judge${themeScoreRows.length === 1 ? '' : 's'}</span></div>
+            <div class="space-y-3">${themeScoreRows.map(score => {
+                const criteria = Object.values(score.criteria || {});
+                const criterionRows = criteria.length
+                    ? criteria.map(criterion => `<span class="text-xs text-slate-600">${escapeHtml(criterion.name)}: <strong>${criterion.value}/${criterion.maxScore}</strong></span>`).join('')
+                    : `<span class="text-xs text-slate-600">Poise: <strong>${score.poise || 0}</strong></span><span class="text-xs text-slate-600">Presence: <strong>${score.presence || 0}</strong></span><span class="text-xs text-slate-600">Q&amp;A: <strong>${score.qa || 0}</strong></span>`;
+                return `<article class="rounded-lg border border-slate-100 bg-slate-50 p-3"><div class="flex flex-wrap items-center justify-between gap-2"><span class="text-sm font-bold text-slate-800">${escapeHtml(score.judgeName)}</span><span class="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-extrabold text-indigo-700">Total ${score.total}</span></div><div class="mt-2 flex flex-wrap gap-x-4 gap-y-1">${criterionRows}</div><p class="mt-3 text-sm leading-6 text-slate-600">${score.remarks ? escapeHtml(score.remarks) : '<span class="italic text-slate-400">No remarks submitted.</span>'}</p></article>`;
+            }).join('')}</div>
+        </section>`).join('')}`;
 }
 
 function renderAdminCandidates() {
@@ -226,38 +470,6 @@ function clearStage() {
     return persistStage({ ...activeStage, activeCandidateId: null });
 }
 
-async function resetData() {
-    if (!window.confirm('Clear all candidates, stage selections, and scores? This cannot be undone.')) return;
-    try {
-        const scoreDelete = await db.from('scores').delete().not('candidate_id', 'is', null);
-        if (scoreDelete.error) throw scoreDelete.error;
-
-        const candidateDelete = await db.from('candidates').delete().not('id', 'is', null);
-        if (candidateDelete.error) throw candidateDelete.error;
-
-        const stageReset = await db.from('active_stage').upsert({
-            id: true,
-            active_candidate_id: null,
-            current_theme: DEFAULT_THEME,
-            updated_at: new Date().toISOString()
-        }, { onConflict: 'id' });
-        if (stageReset.error) throw stageReset.error;
-
-        await syncData();
-        renderAll();
-        cancelEdit();
-        showAppMessage('Data cleared. Add candidates when ready.');
-    } catch (error) {
-        handleWriteError(error, 'clear the data');
-        try {
-            await syncData();
-            renderAll();
-        } catch (syncError) {
-            handleSyncError(syncError);
-        }
-    }
-}
-
 document.getElementById('candidate-form').addEventListener('submit', saveCandidate);
 document.getElementById('candidate-list-body').addEventListener('click', event => {
     const editButton = event.target.closest('[data-edit-id]');
@@ -279,6 +491,61 @@ document.getElementById('candidate-photo-file').addEventListener('change', handl
 document.getElementById('stage-theme').addEventListener('change', updateStageTheme);
 document.getElementById('btn-cancel-edit').addEventListener('click', cancelEdit);
 document.getElementById('btn-clear-stage').addEventListener('click', clearStage);
-document.getElementById('btn-reset-data').addEventListener('click', resetData);
+document.getElementById('theme-form').addEventListener('submit', saveTheme);
+document.getElementById('btn-cancel-theme').addEventListener('click', () => {
+    document.getElementById('theme-form').reset();
+    document.getElementById('theme-id').value = '';
+    document.getElementById('btn-cancel-theme').classList.add('hidden');
+});
+document.getElementById('theme-list-body').addEventListener('click', event => {
+    const editButton = event.target.closest('[data-edit-theme]');
+    const deleteButton = event.target.closest('[data-delete-theme]');
+    if (editButton) {
+        const theme = themes.find(item => item.id === editButton.dataset.editTheme);
+        if (!theme) return;
+        document.getElementById('theme-id').value = theme.id;
+        document.getElementById('theme-name').value = theme.name;
+        document.getElementById('theme-order').value = theme.sortOrder;
+        document.getElementById('btn-cancel-theme').classList.remove('hidden');
+    }
+    if (deleteButton) deleteTheme(deleteButton.dataset.deleteTheme);
+});
+document.getElementById('criteria-form').addEventListener('submit', saveCriteria);
+document.getElementById('btn-cancel-criteria').addEventListener('click', cancelCriteriaEdit);
+document.getElementById('criteria-list-body').addEventListener('click', event => {
+    const editButton = event.target.closest('[data-edit-criteria]');
+    const deleteButton = event.target.closest('[data-delete-criteria]');
+    if (editButton) {
+        const criterion = (themeCriteria[editButton.dataset.criteriaTheme] || [])
+            .find(item => String(item.id) === editButton.dataset.editCriteria);
+        if (!criterion) return;
+        document.getElementById('criteria-id').value = criterion.id;
+        document.getElementById('criteria-theme').value = editButton.dataset.criteriaTheme;
+        document.getElementById('criteria-name').value = criterion.name;
+        document.getElementById('criteria-max-score').value = criterion.maxScore;
+        document.getElementById('btn-cancel-criteria').classList.remove('hidden');
+    }
+    if (deleteButton) deleteCriteria(deleteButton.dataset.deleteCriteria);
+});
+document.getElementById('scorebook-list').addEventListener('click', event => {
+    const candidateButton = event.target.closest('[data-scorebook-candidate]');
+    if (!candidateButton) return;
+    selectedScorebookCandidateId = candidateButton.dataset.scorebookCandidate;
+    renderScorebook();
+});
+document.getElementById('judge-form').addEventListener('submit', saveJudge);
+document.getElementById('judge-list-body').addEventListener('click', event => {
+    const editButton = event.target.closest('[data-edit-judge]');
+    const deleteButton = event.target.closest('[data-delete-judge]');
+    if (editButton) {
+        const judge = judges.find(item => item.id === editButton.dataset.editJudge);
+        if (!judge) return;
+        document.getElementById('judge-id').value = judge.id;
+        document.getElementById('judge-account-name').value = judge.name;
+        document.getElementById('judge-account-code').value = judge.access_code;
+        document.getElementById('judge-account-active').checked = judge.active;
+    }
+    if (deleteButton) deleteJudge(deleteButton.dataset.deleteJudge);
+});
 
 initApp('admin');
