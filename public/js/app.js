@@ -118,7 +118,11 @@ function handleSyncError(error) {
 
 function handleWriteError(error, action) {
     console.error(`Supabase could not ${action}:`, error);
-    showAppMessage(`Could not ${action}. Please try again.`, 'error');
+    const reason = error?.message || error?.details || error?.hint;
+    showAppMessage(
+        reason ? `Could not ${action}: ${reason}` : `Could not ${action}. Please try again.`,
+        'error'
+    );
 }
 
 function subscribeToChanges() {

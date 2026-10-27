@@ -96,12 +96,15 @@ language plpgsql
 as $$
 declare
     criterion jsonb;
-    value numeric;
+    criterion_value numeric;
 begin
-    for criterion in select value from jsonb_each(coalesce(new.criteria, '{}'::jsonb)) loop
+    for criterion in
+        select entry.value
+        from jsonb_each(coalesce(new.criteria, '{}'::jsonb)) as entry
+    loop
         if criterion ? 'value' then
-            value := (criterion->>'value')::numeric;
-            if value < 4 or value > 10 then
+            criterion_value := (criterion->>'value')::numeric;
+            if criterion_value < 4 or criterion_value > 10 then
                 raise exception 'Every score must be between 4 and 10';
             end if;
         end if;
