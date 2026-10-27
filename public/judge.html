@@ -21,6 +21,8 @@
             </div>
             <div class="flex items-center gap-2">
                 <a href="./mr_ms_sdca_tabulation.html" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-arrow-left mr-2"></i>Back</a>
+                <button id="btn-open-judge-leaderboards" type="button" class="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"><i class="fa-solid fa-ranking-star mr-2"></i>Leaderboards</button>
+                <button id="btn-judge-logout" type="button" class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">Log out</button>
                 <span class="rounded-full bg-indigo-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-indigo-700">Judge view</span>
             </div>
         </div>
@@ -74,15 +76,23 @@
                 </section>
             </section>
 
-            <aside class="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-4">
-                <div class="mb-4">
-                    <h2 class="font-bold text-slate-900">Live rankings</h2>
-                    <p class="mt-1 text-xs text-slate-500">Scores are hidden from the ranking list.</p>
-                </div>
-                <div id="judge-leaderboard" class="max-h-[720px] space-y-2 overflow-y-auto custom-scrollbar"></div>
-            </aside>
         </div>
     </main>
+    <dialog id="judge-leaderboard-modal" class="w-[min(94vw,48rem)] rounded-2xl bg-base-100 p-0 shadow-2xl backdrop:bg-slate-950/50">
+        <div class="p-5 sm:p-7">
+            <div class="flex items-start justify-between gap-4">
+                <div><p class="text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Confidential</p><h2 class="mt-1 text-2xl font-extrabold text-slate-950">Leaderboards</h2></div>
+                <button id="btn-close-judge-leaderboards" type="button" class="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100" aria-label="Close leaderboards"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="mt-6 grid gap-6 md:grid-cols-2">
+                <section><h3 class="font-bold text-slate-900">Your leaderboard</h3><p class="mt-1 text-xs text-slate-500">Computed totals from your submitted scores.</p><div id="judge-leaderboard" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
+                <section><h3 class="font-bold text-slate-900">Overall top candidate</h3><p class="mt-1 text-xs text-slate-500">Score is hidden from judges.</p><div id="judge-overall-top" class="mt-3"></div></section>
+            </div>
+        </div>
+    </dialog>
+    <dialog id="confirm-modal" class="w-[min(92vw,28rem)] rounded-2xl bg-base-100 p-0 shadow-2xl backdrop:bg-slate-950/50">
+        <div class="p-6"><h2 id="confirm-modal-title" class="text-xl font-extrabold text-slate-950"></h2><p id="confirm-modal-message" class="mt-2 text-sm leading-6 text-slate-600"></p><div class="mt-6 flex justify-end gap-2"><button id="confirm-modal-cancel" type="button" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600">Cancel</button><button id="confirm-modal-confirm" type="button" class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white">Confirm</button></div></div>
+    </dialog>
     <div id="app-message" role="status" aria-live="polite" class="hidden"></div>
     <script src="./js/navigation.js"></script>
     <script src="./js/app.js"></script>

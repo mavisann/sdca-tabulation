@@ -1,4 +1,4 @@
-function renderLeaderboard(containerId) {
+function renderLeaderboard(containerId, { showAverage = false } = {}) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
@@ -29,6 +29,7 @@ function renderLeaderboard(containerId) {
                 <p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-slate-400">${placeLabel}</p>
                 <p class="truncate text-sm font-bold text-slate-800">${escapeHtml(candidate.name)}</p>
                 <p class="truncate text-xs text-slate-500">${escapeHtml(candidate.program)} · Scored</p>
+                ${showAverage ? `<p class="mt-1 text-xs font-extrabold text-indigo-700">Average Score: ${candidate.totalScore.toFixed(2)}</p>` : ''}
             </div>
         `;
         container.appendChild(row);

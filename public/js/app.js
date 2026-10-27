@@ -132,6 +132,15 @@ function subscribeToChanges() {
     if (realtimeChannel) db.removeChannel(realtimeChannel);
 
     realtimeChannel = db.channel('sdca-tabulation-changes');
+    realtimeChannel.on('broadcast', { event: 'competition-reset' }, async () => {
+        try {
+            await syncData();
+            renderAll();
+            showAppMessage('The administrator reset the competition scores.');
+        } catch (error) {
+            handleSyncError(error);
+        }
+    });
     ['candidates', 'active_stage', 'scores', 'themes', 'theme_criteria', 'judges'].forEach(table => {
         ['INSERT', 'UPDATE', 'DELETE'].forEach(event => {
             realtimeChannel.on('postgres_changes', {
@@ -191,11 +200,98 @@ function getCandidateScoreTotal(candidateId) {
         .reduce((total, score) => total + Number(score.total || 0), 0);
 }
 
+function getCandidateAverageScore(candidateId) {
+    const totals = Object.values(scores[candidateId] || {})
+        .flat()
+        .map(score => Number(score.total))
+        .filter(Number.isFinite);
+    return totals.length ? totals.reduce((sum, total) => sum + total, 0) / totals.length : 0;
+}
+
+function getJudgeScoreTotal(candidateId, judgeId) {
+    return Object.values(scores[candidateId] || {})
+        .flat()
+        .filter(score => judgeId
+            ? score.judgeId === judgeId
+            : score.judgeName === getJudgeName())
+        .reduce((total, score) => total + Number(score.total || 0), 0);
+}
+
+function getJudgeRankedCandidates(judgeId) {
+    return candidates
+        .map(candidate => ({
+            ...candidate,
+            totalScore: getJudgeScoreTotal(candidate.id, judgeId)
+        }))
+        .filter(candidate => candidate.totalScore > 0)
+        .sort((first, second) => (
+            second.totalScore - first.totalScore || first.name.localeCompare(second.name)
+        ));
+}
+
+function openConfirmModal({ title, message, confirmLabel = 'Confirm', onConfirm }) {
+    const modal = document.getElementById('confirm-modal');
+    if (!modal) return Promise.resolve(window.confirm(message));
+    document.getElementById('confirm-modal-title').textContent = title;
+    document.getElementById('confirm-modal-message').textContent = message;
+    const confirmButton = document.getElementById('confirm-modal-confirm');
+    confirmButton.textContent = confirmLabel;
+    modal.showModal();
+    return new Promise(resolve => {
+        let settled = false;
+        const close = result => {
+            if (settled) return;
+            settled = true;
+            modal.close();
+            confirmButton.removeEventListener('click', confirm);
+            document.getElementById('confirm-modal-cancel').removeEventListener('click', cancel);
+            modal.removeEventListener('cancel', cancelEvent);
+            resolve(result);
+        };
+        const confirm = () => {
+            close(true);
+            if (onConfirm) onConfirm();
+        };
+        const cancel = () => close(false);
+        const cancelEvent = event => {
+            event.preventDefault();
+            cancel();
+        };
+        confirmButton.addEventListener('click', confirm, { once: true });
+        document.getElementById('confirm-modal-cancel').addEventListener('click', cancel, { once: true });
+        modal.addEventListener('cancel', cancelEvent, { once: true });
+    });
+}
+
+async function resetCompetitionData() {
+    const confirmed = await openConfirmModal({
+        title: 'Reset competition data?',
+        message: 'This permanently deletes every submitted score and clears the active stage for all connected pages.',
+        confirmLabel: 'Reset scores'
+    });
+    if (!confirmed) return;
+    const { error } = await db.rpc('reset_competition_data');
+    if (error) {
+        handleWriteError(error, 'reset competition data');
+        return;
+    }
+    if (realtimeChannel) {
+        await realtimeChannel.send({
+            type: 'broadcast',
+            event: 'competition-reset',
+            payload: { resetAt: new Date().toISOString() }
+        });
+    }
+    await syncData();
+    renderAll();
+    showAppMessage('Competition scores reset for all connected pages.');
+}
+
 function getRankedCandidates({ scoredOnly = false } = {}) {
     return candidates
         .map(candidate => ({
             ...candidate,
-            totalScore: getCandidateScoreTotal(candidate.id)
+            totalScore: getCandidateAverageScore(candidate.id)
         }))
         .filter(candidate => !scoredOnly || candidate.totalScore > 0)
         .sort((first, second) => (

@@ -16,7 +16,7 @@ function renderAdmin() {
     }
     renderAdminCandidates();
     renderAdminStage();
-    renderLeaderboard('admin-leaderboard');
+    renderLeaderboard('admin-leaderboard', { showAverage: true });
 }
 
 function renderAdminTabs() {
@@ -138,7 +138,7 @@ async function saveCriteria(event) {
     const payload = {
         theme_id: themeId,
         name: document.getElementById('criteria-name').value.trim(),
-        max_score: Number(document.getElementById('criteria-max-score').value || 10),
+        max_score: Math.min(10, Math.max(4, Number(document.getElementById('criteria-max-score').value || 10))),
         sort_order: (themeCriteria[themeId] || []).length
     };
     try {
@@ -243,9 +243,9 @@ function renderScorebook() {
         details.innerHTML = '<p class="text-sm text-slate-500">No scores have been submitted for this candidate yet.</p>';
         return;
     }
-    details.innerHTML = `<div class="mb-5"><p class="text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Score details</p><h3 class="mt-1 text-2xl font-extrabold text-slate-950">${escapeHtml(candidate.name)}</h3><p class="mt-1 text-sm text-slate-500">${escapeHtml(candidate.program)}</p></div>${themeScores.map(([themeId, themeScoreRows]) => `
+    details.innerHTML = `<div class="mb-5 flex flex-wrap items-end justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Score details</p><h3 class="mt-1 text-2xl font-extrabold text-slate-950">${escapeHtml(candidate.name)}</h3><p class="mt-1 text-sm text-slate-500">${escapeHtml(candidate.program)}</p></div><strong class="text-lg text-indigo-700">Final average: ${getCandidateAverageScore(candidate.id).toFixed(2)}</strong></div>${themeScores.map(([themeId, themeScoreRows]) => `
         <section class="mb-5 last:mb-0 rounded-xl border border-slate-200 bg-white p-4">
-            <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-slate-900">${escapeHtml(getThemeName(themeId))}</h4><span class="text-xs font-semibold text-slate-500">${themeScoreRows.length} judge${themeScoreRows.length === 1 ? '' : 's'}</span></div>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-slate-900">${escapeHtml(getThemeName(themeId))}</h4><span class="text-xs font-semibold text-slate-500">Average: ${(themeScoreRows.reduce((sum, score) => sum + Number(score.total || 0), 0) / themeScoreRows.length).toFixed(2)} · ${themeScoreRows.length} judge${themeScoreRows.length === 1 ? '' : 's'}</span></div>
             <div class="space-y-3">${themeScoreRows.map(score => {
                 const criteria = Object.values(score.criteria || {});
                 const criterionRows = criteria.length
@@ -491,6 +491,7 @@ document.getElementById('candidate-photo-file').addEventListener('change', handl
 document.getElementById('stage-theme').addEventListener('change', updateStageTheme);
 document.getElementById('btn-cancel-edit').addEventListener('click', cancelEdit);
 document.getElementById('btn-clear-stage').addEventListener('click', clearStage);
+document.getElementById('btn-reset-competition').addEventListener('click', resetCompetitionData);
 document.getElementById('theme-form').addEventListener('submit', saveTheme);
 document.getElementById('btn-cancel-theme').addEventListener('click', () => {
     document.getElementById('theme-form').reset();

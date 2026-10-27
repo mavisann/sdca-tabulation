@@ -17,12 +17,12 @@ create table if not exists public.scores (
     candidate_id text not null references public.candidates(id) on delete cascade,
     theme text not null,
     judge_name text not null default 'Judge 1',
-    poise smallint,
-    presence smallint,
-    qa smallint,
+    poise numeric(5,2),
+    presence numeric(5,2),
+    qa numeric(5,2),
     criteria jsonb not null default '{}'::jsonb,
     remarks text not null default '',
-    total integer not null check (total >= 0),
+    total numeric(7,2) not null check (total >= 0),
     submitted_at timestamptz not null default now(),
     unique (candidate_id, theme, judge_name)
 );
@@ -65,9 +65,45 @@ alter table public.scores drop constraint if exists scores_qa_check;
 alter table public.scores drop constraint if exists scores_total_check;
 alter table public.scores drop constraint if exists scores_candidate_id_theme_key;
 alter table public.scores drop constraint if exists scores_candidate_theme_judge_key;
+alter table public.scores alter column poise type numeric(5,2) using poise::numeric;
+alter table public.scores alter column presence type numeric(5,2) using presence::numeric;
+alter table public.scores alter column qa type numeric(5,2) using qa::numeric;
+alter table public.scores alter column total type numeric(7,2) using total::numeric;
+alter table public.scores drop constraint if exists scores_poise_range_check;
+alter table public.scores drop constraint if exists scores_presence_range_check;
+alter table public.scores drop constraint if exists scores_qa_range_check;
+alter table public.scores add constraint scores_poise_range_check check (poise is null or poise between 4 and 10);
+alter table public.scores add constraint scores_presence_range_check check (presence is null or presence between 4 and 10);
+alter table public.scores add constraint scores_qa_range_check check (qa is null or qa between 4 and 10);
+alter table public.scores drop constraint if exists scores_total_check;
 alter table public.scores add constraint scores_total_check check (total >= 0);
 alter table public.scores drop constraint if exists scores_candidate_theme_judge_id_key;
 alter table public.scores add constraint scores_candidate_theme_judge_id_key unique (candidate_id, theme, judge_id);
+
+create or replace function public.validate_score_criteria()
+returns trigger
+language plpgsql
+as $$
+declare
+    criterion jsonb;
+    value numeric;
+begin
+    for criterion in select value from jsonb_each(coalesce(new.criteria, '{}'::jsonb)) loop
+        if criterion ? 'value' then
+            value := (criterion->>'value')::numeric;
+            if value < 4 or value > 10 then
+                raise exception 'Every score must be between 4 and 10';
+            end if;
+        end if;
+    end loop;
+    return new;
+end;
+$$;
+
+drop trigger if exists validate_score_criteria_trigger on public.scores;
+create trigger validate_score_criteria_trigger
+before insert or update on public.scores
+for each row execute function public.validate_score_criteria();
 
 insert into public.themes (id, name, sort_order)
 values
@@ -180,6 +216,23 @@ as $$
 $$;
 
 grant execute on function public.authenticate_judge(text) to anon, authenticated;
+
+create or replace function public.reset_competition_data()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    delete from public.scores;
+    update public.active_stage
+    set active_candidate_id = null,
+        updated_at = now()
+    where id = true;
+end;
+$$;
+
+grant execute on function public.reset_competition_data() to anon, authenticated;
 
 do $$
 begin
