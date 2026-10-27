@@ -43,7 +43,7 @@ function renderScoreOptions(criteria = getThemeCriteria(activeStage.currentTheme
         return `
         <fieldset class="score-fieldset rounded-2xl border border-base-300 bg-base-200 p-4">
             <legend class="mb-3 flex w-full items-center justify-between gap-3 text-sm font-bold text-base-content"><span>${escapeHtml(criterion.name)}</span><span class="badge badge-primary badge-sm font-extrabold">4–${maxScore}</span></legend>
-            <input class="score-input w-full rounded-xl border border-base-300 bg-base-100 px-3 py-3 text-lg font-bold outline-none focus:border-primary focus:ring-4 focus:ring-primary/20" type="number" name="score-criterion-${criterionIndex}" min="4" max="${maxScore}" step="0.1" inputmode="decimal" required aria-label="${escapeHtml(criterion.name)} score" placeholder="4.0–${maxScore}">
+            <input class="score-input w-full rounded-xl border border-base-300 bg-base-100 px-3 py-3 text-lg font-bold outline-none focus:border-primary focus:ring-4 focus:ring-primary/20" type="number" name="score-criterion-${criterionIndex}" min="4" max="${maxScore}" step="0.01" inputmode="decimal" required aria-label="${escapeHtml(criterion.name)} score" placeholder="4.00–${maxScore}.00">
         </fieldset>`;
     }).join('');
 }
@@ -165,16 +165,16 @@ async function submitScores(event) {
 document.getElementById('scoring-form').addEventListener('submit', submitScores);
 function renderJudgeLeaderboards() {
     const personal = document.getElementById('judge-leaderboard');
-    const overall = document.getElementById('judge-overall-top');
+    const overall = document.getElementById('judge-overall-leaderboard');
     if (!personal || !overall) return;
     const ranked = getJudgeRankedCandidates(authenticatedJudge?.id);
     personal.innerHTML = ranked.length
         ? ranked.map((candidate, index) => `<article class="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-indigo-50 text-sm font-black text-indigo-700">${index + 1}</span><div class="min-w-0 flex-1"><p class="truncate text-sm font-bold text-slate-800">${escapeHtml(candidate.name)}</p><p class="truncate text-xs text-slate-500">${escapeHtml(candidate.program)}</p></div><strong class="text-sm text-indigo-700">${candidate.totalScore.toFixed(2)}</strong></article>`).join('')
         : '<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Submit a score to build your leaderboard.</p>';
-    const top = getRankedCandidates({ scoredOnly: true })[0];
-    overall.innerHTML = top
-        ? `<article class="rounded-2xl border border-amber-200 bg-amber-50 p-5"><p class="text-xs font-bold uppercase tracking-wide text-amber-700">Current overall leader</p><h3 class="mt-2 text-xl font-extrabold text-slate-950">${escapeHtml(top.name)}</h3><p class="mt-1 text-sm text-slate-600">${escapeHtml(top.program)}</p></article>`
-        : '<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No submitted scores yet.</p>';
+    const overallRanked = getOverallRankedCandidates();
+    overall.innerHTML = overallRanked.length
+        ? overallRanked.map((candidate, index) => `<article class="flex items-center gap-3 rounded-xl border ${index === 0 && candidate.scored ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-white'} p-3"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg ${index === 0 && candidate.scored ? 'bg-amber-200 text-amber-900' : 'bg-slate-100 text-slate-700'} text-sm font-black">${index + 1}</span><div class="min-w-0 flex-1"><p class="truncate text-sm font-bold text-slate-800">${escapeHtml(candidate.name)}</p><p class="truncate text-xs text-slate-500">${escapeHtml(candidate.program)}</p></div></article>`).join('')
+        : '<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No candidates available.</p>';
 }
 
 document.getElementById('btn-open-judge-leaderboards').addEventListener('click', () => {

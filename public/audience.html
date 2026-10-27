@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#ffffff">
     <title>Live Finalists | Mr. &amp; Ms. SDCA Tabulation</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,28 +12,28 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="min-h-screen bg-base-300 text-base-content">
-    <header class="border-b border-white/10 bg-slate-950/90">
+<body class="audience-page min-h-screen bg-white text-slate-900">
+    <header class="border-b border-amber-100 bg-white">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-5 sm:px-8">
             <div class="flex items-center gap-3">
-                <span class="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-500 text-white"><i class="fa-solid fa-crown text-xl"></i></span>
-                <span><span class="block text-sm font-bold">Mr. &amp; Ms. SDCA</span><span class="block text-xs text-slate-400">Live audience ranking</span></span>
+                <span class="grid h-11 w-11 place-items-center rounded-2xl bg-[#b5162a] text-white shadow-sm shadow-red-100"><i class="fa-solid fa-crown text-xl text-[#f3c64f]"></i></span>
+                <span><span class="block text-sm font-bold text-slate-950">Mr. &amp; Ms. SDCA</span><span class="block text-xs text-slate-500">Live audience ranking</span></span>
             </div>
             <div class="flex items-center gap-2">
-                <a href="./mr_ms_sdca_tabulation.html" class="rounded-xl border border-white/15 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10"><i class="fa-solid fa-arrow-left mr-2"></i>Back</a>
-                <span class="rounded-full bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-200">Audience leaderboard</span>
+                <a href="./mr_ms_sdca_tabulation.html" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-amber-50"><i class="fa-solid fa-arrow-left mr-2"></i>Back</a>
+                <span class="rounded-full bg-amber-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-[#9a6d00]">Audience leaderboard</span>
             </div>
         </div>
     </header>
     <main class="mx-auto flex min-h-[calc(100vh-81px)] max-w-7xl flex-col px-5 py-10 sm:px-8 lg:py-14">
         <section class="mb-10 text-center">
-            <p class="mb-3 text-xs font-bold uppercase tracking-[.3em] text-indigo-300">The journey to the crown</p>
-            <h1 class="text-4xl font-extrabold tracking-tight sm:text-6xl">Top 3 finalists</h1>
-            <p id="audience-theme" class="mt-4 text-sm font-medium text-slate-400"></p>
-            <p id="audience-status" class="mt-2 text-xs font-bold uppercase tracking-[.2em] text-emerald-300">Live ranking</p>
+            <p class="mb-3 text-xs font-bold uppercase tracking-[.3em] text-[#b5162a]">The journey to the crown</p>
+            <h1 class="text-4xl font-extrabold tracking-tight text-slate-950 sm:text-6xl">Top 3 finalists</h1>
+            <p id="audience-theme" class="mt-4 text-sm font-medium text-slate-500"></p>
+            <p id="audience-status" class="mt-2 text-xs font-bold uppercase tracking-[.2em] text-[#b5162a]">Live ranking</p>
         </section>
         <section id="audience-podium" aria-label="Top three contestants" class="mx-auto grid w-full max-w-5xl items-end gap-5 sm:grid-cols-3"></section>
-        <p class="mt-10 text-center text-xs text-slate-500">Rankings update live · Scores remain confidential</p>
+        <p class="mt-10 text-center text-xs text-slate-400">Rankings update live. Scores remain confidential.</p>
     </main>
     <script src="./js/navigation.js"></script>
     <script src="./js/app.js"></script>

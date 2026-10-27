@@ -61,16 +61,24 @@ alter table public.scores add column if not exists judge_id text references publ
 alter table public.scores alter column poise drop not null;
 alter table public.scores alter column presence drop not null;
 alter table public.scores alter column qa drop not null;
+alter table public.scores alter column poise type numeric(5,2) using poise::numeric;
+alter table public.scores alter column presence type numeric(5,2) using presence::numeric;
+alter table public.scores alter column qa type numeric(5,2) using qa::numeric;
+alter table public.scores alter column total type numeric(7,2) using total::numeric;
 alter table public.scores drop constraint if exists scores_poise_check;
 alter table public.scores drop constraint if exists scores_presence_check;
 alter table public.scores drop constraint if exists scores_qa_check;
 alter table public.scores drop constraint if exists scores_total_check;
 alter table public.scores drop constraint if exists scores_candidate_id_theme_key;
 alter table public.scores drop constraint if exists scores_candidate_theme_judge_key;
-alter table public.scores alter column poise type numeric(5,2) using poise::numeric;
-alter table public.scores alter column presence type numeric(5,2) using presence::numeric;
-alter table public.scores alter column qa type numeric(5,2) using qa::numeric;
-alter table public.scores alter column total type numeric(7,2) using total::numeric;
+
+-- Remove legacy scores that cannot satisfy the current 4–10 scoring rule
+-- before adding the range constraints below.
+delete from public.scores
+where (poise is not null and (poise < 4 or poise > 10))
+   or (presence is not null and (presence < 4 or presence > 10))
+   or (qa is not null and (qa < 4 or qa > 10));
+
 alter table public.scores drop constraint if exists scores_poise_range_check;
 alter table public.scores drop constraint if exists scores_presence_range_check;
 alter table public.scores drop constraint if exists scores_qa_range_check;

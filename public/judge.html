@@ -78,7 +78,7 @@
 
         </div>
     </main>
-    <dialog id="judge-leaderboard-modal" class="w-[min(94vw,48rem)] rounded-2xl bg-base-100 p-0 shadow-2xl backdrop:bg-slate-950/50">
+    <dialog id="judge-leaderboard-modal" class="w-[min(94vw,64rem)] max-w-none rounded-2xl bg-base-100 p-0 shadow-2xl backdrop:bg-slate-950/50">
         <div class="p-5 sm:p-7">
             <div class="flex items-start justify-between gap-4">
                 <div><p class="text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Confidential</p><h2 class="mt-1 text-2xl font-extrabold text-slate-950">Leaderboards</h2></div>
@@ -86,7 +86,7 @@
             </div>
             <div class="mt-6 grid gap-6 md:grid-cols-2">
                 <section><h3 class="font-bold text-slate-900">Your leaderboard</h3><p class="mt-1 text-xs text-slate-500">Computed totals from your submitted scores.</p><div id="judge-leaderboard" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
-                <section><h3 class="font-bold text-slate-900">Overall top candidate</h3><p class="mt-1 text-xs text-slate-500">Score is hidden from judges.</p><div id="judge-overall-top" class="mt-3"></div></section>
+                <section><h3 class="font-bold text-slate-900">Overall ranking</h3><p class="mt-1 text-xs text-slate-500">All candidates ranked across every judge and theme. Scores are hidden.</p><div id="judge-overall-leaderboard" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
             </div>
         </div>
     </dialog>

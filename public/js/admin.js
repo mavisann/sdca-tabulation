@@ -245,7 +245,7 @@ function renderScorebook() {
     }
     details.innerHTML = `<div class="mb-5 flex flex-wrap items-end justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Score details</p><h3 class="mt-1 text-2xl font-extrabold text-slate-950">${escapeHtml(candidate.name)}</h3><p class="mt-1 text-sm text-slate-500">${escapeHtml(candidate.program)}</p></div><strong class="text-lg text-indigo-700">Final average: ${getCandidateAverageScore(candidate.id).toFixed(2)}</strong></div>${themeScores.map(([themeId, themeScoreRows]) => `
         <section class="mb-5 last:mb-0 rounded-xl border border-slate-200 bg-white p-4">
-            <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-slate-900">${escapeHtml(getThemeName(themeId))}</h4><span class="text-xs font-semibold text-slate-500">Average: ${(themeScoreRows.reduce((sum, score) => sum + Number(score.total || 0), 0) / themeScoreRows.length).toFixed(2)} · ${themeScoreRows.length} judge${themeScoreRows.length === 1 ? '' : 's'}</span></div>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold text-slate-900">${escapeHtml(getThemeName(themeId))}</h4><span class="text-xs font-semibold text-slate-500">Average: ${getThemeAverageScore(themeScoreRows).toFixed(2)} · ${themeScoreRows.length} judge${themeScoreRows.length === 1 ? '' : 's'}</span></div>
             <div class="space-y-3">${themeScoreRows.map(score => {
                 const criteria = Object.values(score.criteria || {});
                 const criterionRows = criteria.length

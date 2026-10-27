@@ -41,6 +41,70 @@ body.bg-slate-950 .text-white { color: hsl(var(--bc)) !important; }
 .bg-amber-100 { background-color: #fff7dc !important; }
 .bg-red-600 { background-color: var(--sdca-red) !important; }
 
+.audience-page {
+    background: #ffffff !important;
+}
+
+.audience-podium-card {
+    border: 1px solid #e7e2d7;
+    border-radius: 1.5rem;
+    background: #ffffff;
+    box-shadow: 0 16px 36px rgb(73 49 17 / 0.08);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.audience-podium-card--champion {
+    min-height: 32rem;
+    border: 2px solid #d6a928;
+    background:
+        radial-gradient(circle at 50% 0%, rgb(255 247 206 / 0.92), transparent 42%),
+        #fffdf7;
+    box-shadow: 0 24px 54px rgb(160 111 0 / 0.18);
+    transform: translateY(-1rem);
+}
+
+.audience-podium-card--second,
+.audience-podium-card--third {
+    min-height: 26rem;
+}
+
+.audience-podium-card--second {
+    border-color: #cbd2d8;
+    background: linear-gradient(180deg, #f8fafb, #ffffff);
+}
+
+.audience-podium-card--third {
+    border-color: #e7b5b8;
+    background: linear-gradient(180deg, #fff8f8, #ffffff);
+}
+
+.audience-podium-card--empty {
+    border-style: dashed;
+    border-color: #d7d9de;
+    box-shadow: none;
+}
+
+.audience-podium-card:hover {
+    transform: translateY(-0.35rem);
+    box-shadow: 0 22px 44px rgb(73 49 17 / 0.12);
+}
+
+.audience-podium-card--champion:hover {
+    transform: translateY(-1.25rem);
+}
+
+.audience-crown {
+    color: var(--sdca-gold);
+    font-size: 2rem;
+    filter: drop-shadow(0 5px 5px rgb(160 111 0 / 0.2));
+}
+
+.audience-candidate-image {
+    border: 4px solid rgb(255 255 255 / 0.95);
+    background: #f5f2ea;
+    box-shadow: 0 10px 24px rgb(73 49 17 / 0.12);
+}
+
 button, a, [role='button'] { touch-action: manipulation; }
 button, [role='button'] { user-select: none; -webkit-user-select: none; }
 
@@ -83,4 +147,22 @@ button, [role='button'] { user-select: none; -webkit-user-select: none; }
 @media (max-width: 767px) {
     header > div { padding-inline: 1rem; }
     table { min-width: 38rem; }
+    #judge-active,
+    #judge-waiting { width: 100%; }
+    #judge-active > div:first-child { align-items: stretch; }
+    #judge-cand-img { align-self: center; }
+    #judge-leaderboard-modal { max-height: 90vh; }
+    #judge-leaderboard-modal > div { max-height: 90vh; overflow-y: auto; }
+    .audience-podium-card--champion {
+        transform: none;
+        min-height: 28rem;
+    }
+    .audience-podium-card--second,
+    .audience-podium-card--third {
+        min-height: 25rem;
+    }
+    .audience-podium-card:hover,
+    .audience-podium-card--champion:hover {
+        transform: translateY(-0.2rem);
+    }
 }

@@ -193,12 +193,26 @@ function getCandidateScoreTotal(candidateId) {
         .reduce((total, score) => total + Number(score.total || 0), 0);
 }
 
-function getCandidateAverageScore(candidateId) {
-    const totals = Object.values(scores[candidateId] || {})
-        .flat()
+function getCandidateThemeAverages(candidateId) {
+    return Object.values(scores[candidateId] || {})
+        .map(getThemeAverageScore)
+        .filter(Number.isFinite);
+}
+
+function getThemeAverageScore(themeScoreRows) {
+    const totals = themeScoreRows
         .map(score => Number(score.total))
         .filter(Number.isFinite);
-    return totals.length ? totals.reduce((sum, total) => sum + total, 0) / totals.length : 0;
+    return totals.length
+        ? totals.reduce((sum, total) => sum + total, 0) / totals.length
+        : null;
+}
+
+function getCandidateAverageScore(candidateId) {
+    const themeAverages = getCandidateThemeAverages(candidateId);
+    return themeAverages.length
+        ? Number((themeAverages.reduce((sum, average) => sum + average, 0) / themeAverages.length).toFixed(2))
+        : 0;
 }
 
 function getJudgeScoreTotal(candidateId, judgeId) {
@@ -290,6 +304,20 @@ function getRankedCandidates({ scoredOnly = false } = {}) {
         .filter(candidate => !scoredOnly || candidate.totalScore > 0)
         .sort((first, second) => (
             second.totalScore - first.totalScore || first.name.localeCompare(second.name)
+        ));
+}
+
+function getOverallRankedCandidates() {
+    return candidates
+        .map(candidate => ({
+            ...candidate,
+            averageScore: getCandidateAverageScore(candidate.id),
+            scored: Object.values(scores[candidate.id] || {}).flat().length > 0
+        }))
+        .sort((first, second) => (
+            Number(second.scored) - Number(first.scored)
+            || second.averageScore - first.averageScore
+            || first.name.localeCompare(second.name)
         ));
 }
 
