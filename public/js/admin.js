@@ -44,10 +44,10 @@ function renderAdminTabs() {
 function renderThemeSelect() {
     const select = document.getElementById('stage-theme');
     if (!select) return;
-    select.innerHTML = themes.map(theme => (
+    select.innerHTML = `<option value="">No theme selected</option>${themes.map(theme => (
         `<option value="${escapeHtml(theme.id)}">${escapeHtml(theme.name)}</option>`
-    )).join('');
-    select.value = activeStage.currentTheme;
+    )).join('')}`;
+    select.value = activeStage.currentTheme || '';
 }
 
 function renderThemeCrud() {
@@ -491,7 +491,6 @@ document.getElementById('candidate-photo-file').addEventListener('change', handl
 document.getElementById('stage-theme').addEventListener('change', updateStageTheme);
 document.getElementById('btn-cancel-edit').addEventListener('click', cancelEdit);
 document.getElementById('btn-clear-stage').addEventListener('click', clearStage);
-document.getElementById('btn-reset-competition').addEventListener('click', resetCompetitionData);
 document.getElementById('theme-form').addEventListener('submit', saveTheme);
 document.getElementById('btn-cancel-theme').addEventListener('click', () => {
     document.getElementById('theme-form').reset();
@@ -547,6 +546,13 @@ document.getElementById('judge-list-body').addEventListener('click', event => {
         document.getElementById('judge-account-active').checked = judge.active;
     }
     if (deleteButton) deleteJudge(deleteButton.dataset.deleteJudge);
+});
+document.querySelectorAll('[data-reset-rpc]').forEach(button => {
+    button.addEventListener('click', () => resetAdminData(
+        button.dataset.resetKind,
+        button.dataset.resetLabel,
+        button.dataset.resetRpc
+    ));
 });
 
 initApp('admin');

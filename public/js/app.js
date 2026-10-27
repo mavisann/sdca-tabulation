@@ -1,15 +1,8 @@
-const DEFAULT_THEME = 'Casual Wear';
-const DEFAULT_CRITERIA = [
-    { name: 'Poise & Bearing', maxScore: 10 },
-    { name: 'Stage Presence', maxScore: 10 },
-    { name: 'Q&A', maxScore: 10 }
-];
-
 let candidates = [];
 let themes = [];
 let themeCriteria = {};
 let judges = [];
-let activeStage = { activeCandidateId: null, currentTheme: DEFAULT_THEME, updatedAt: null };
+let activeStage = { activeCandidateId: null, currentTheme: null, updatedAt: null };
 let scores = {};
 let currentRole = null;
 let db = null;
@@ -82,10 +75,10 @@ async function syncData() {
     activeStage = stage
         ? {
             activeCandidateId: stage.active_candidate_id,
-            currentTheme: stage.current_theme || DEFAULT_THEME,
+            currentTheme: stage.current_theme || null,
             updatedAt: stage.updated_at || null
         }
-        : { activeCandidateId: null, currentTheme: DEFAULT_THEME, updatedAt: null };
+        : { activeCandidateId: null, currentTheme: null, updatedAt: null };
 
     scores = {};
     (scoreResult.data || []).forEach(score => {
@@ -108,7 +101,7 @@ async function syncData() {
 }
 
 function getThemeCriteria(themeId) {
-    return themeCriteria[themeId]?.length ? themeCriteria[themeId] : DEFAULT_CRITERIA;
+    return themeCriteria[themeId] || [];
 }
 
 function getThemeName(themeId) {
@@ -132,11 +125,11 @@ function subscribeToChanges() {
     if (realtimeChannel) db.removeChannel(realtimeChannel);
 
     realtimeChannel = db.channel('sdca-tabulation-changes');
-    realtimeChannel.on('broadcast', { event: 'competition-reset' }, async () => {
+    realtimeChannel.on('broadcast', { event: 'admin-data-reset' }, async ({ payload }) => {
         try {
             await syncData();
             renderAll();
-            showAppMessage('The administrator reset the competition scores.');
+            showAppMessage(`The administrator reset ${payload?.kind || 'data'}.`);
         } catch (error) {
             handleSyncError(error);
         }
@@ -263,28 +256,29 @@ function openConfirmModal({ title, message, confirmLabel = 'Confirm', onConfirm 
     });
 }
 
-async function resetCompetitionData() {
+async function resetAdminData(kind, label, rpcName) {
     const confirmed = await openConfirmModal({
-        title: 'Reset competition data?',
-        message: 'This permanently deletes every submitted score and clears the active stage for all connected pages.',
-        confirmLabel: 'Reset scores'
+        title: `${label}?`,
+        message: `This permanently deletes the ${label.toLowerCase()} data. This action cannot be undone.`,
+        confirmLabel: label
     });
     if (!confirmed) return;
-    const { error } = await db.rpc('reset_competition_data');
+    const { error } = await db.rpc(rpcName);
     if (error) {
-        handleWriteError(error, 'reset competition data');
+        console.error(`Supabase could not ${label.toLowerCase()}:`, error);
+        showAppMessage(`Could not ${label.toLowerCase()}: ${error.message || 'Please run the latest schema migration.'}`, 'error');
         return;
     }
     if (realtimeChannel) {
         await realtimeChannel.send({
             type: 'broadcast',
-            event: 'competition-reset',
-            payload: { resetAt: new Date().toISOString() }
+            event: 'admin-data-reset',
+            payload: { kind, resetAt: new Date().toISOString() }
         });
     }
     await syncData();
     renderAll();
-    showAppMessage('Competition scores reset for all connected pages.');
+    showAppMessage(`${label} completed for all connected pages.`);
 }
 
 function getRankedCandidates({ scoredOnly = false } = {}) {

@@ -8,9 +8,12 @@ create table if not exists public.candidates (
 create table if not exists public.active_stage (
     id boolean primary key default true check (id is true),
     active_candidate_id text references public.candidates(id) on delete set null,
-    current_theme text not null default 'Casual Wear',
+    current_theme text,
     updated_at timestamptz not null default now()
 );
+
+alter table public.active_stage alter column current_theme drop not null;
+alter table public.active_stage alter column current_theme drop default;
 
 create table if not exists public.scores (
     id uuid primary key default gen_random_uuid(),
@@ -58,7 +61,6 @@ alter table public.scores add column if not exists judge_id text references publ
 alter table public.scores alter column poise drop not null;
 alter table public.scores alter column presence drop not null;
 alter table public.scores alter column qa drop not null;
-alter table public.scores alter column total type integer;
 alter table public.scores drop constraint if exists scores_poise_check;
 alter table public.scores drop constraint if exists scores_presence_check;
 alter table public.scores drop constraint if exists scores_qa_check;
@@ -106,20 +108,6 @@ before insert or update on public.scores
 for each row execute function public.validate_score_criteria();
 
 insert into public.themes (id, name, sort_order)
-values
-    ('Casual Wear', 'Casual Wear', 1),
-    ('Formal Wear', 'Formal Wear', 2),
-    ('Talent Portion', 'Talent Portion', 3),
-    ('Final Q&A', 'Final Q&A', 4)
-on conflict (id) do nothing;
-
-insert into public.theme_criteria (theme_id, name, max_score, sort_order)
-select theme.id, criterion.name, 10, criterion.sort_order
-from public.themes theme
-cross join (values ('Poise & Bearing', 1), ('Stage Presence', 2), ('Q&A', 3)) criterion(name, sort_order)
-on conflict (theme_id, name) do nothing;
-
-insert into public.themes (id, name, sort_order)
 select distinct source.theme_id, source.theme_id, 999
 from (
     select current_theme as theme_id from public.active_stage where current_theme is not null
@@ -139,7 +127,7 @@ alter table public.scores add constraint scores_theme_fkey
     foreign key (theme) references public.themes(id) on delete restrict;
 
 insert into public.active_stage (id, active_candidate_id, current_theme)
-values (true, null, 'Casual Wear')
+values (true, null, null)
 on conflict (id) do nothing;
 
 alter table public.candidates enable row level security;
@@ -217,7 +205,14 @@ $$;
 
 grant execute on function public.authenticate_judge(text) to anon, authenticated;
 
-create or replace function public.reset_competition_data()
+create or replace function public.reset_scores_data()
+returns void
+language sql
+security definer
+set search_path = public
+as $$ delete from public.scores; $$;
+
+create or replace function public.reset_candidates_data()
 returns void
 language plpgsql
 security definer
@@ -226,13 +221,56 @@ as $$
 begin
     delete from public.scores;
     update public.active_stage
-    set active_candidate_id = null,
-        updated_at = now()
+    set active_candidate_id = null, updated_at = now()
     where id = true;
+    delete from public.candidates;
 end;
 $$;
 
-grant execute on function public.reset_competition_data() to anon, authenticated;
+create or replace function public.reset_themes_data()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    delete from public.scores;
+    update public.active_stage
+    set active_candidate_id = null, current_theme = null, updated_at = now()
+    where id = true;
+    delete from public.themes;
+end;
+$$;
+
+create or replace function public.reset_score_basis_data()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    delete from public.scores;
+    delete from public.theme_criteria;
+end;
+$$;
+
+create or replace function public.reset_judges_data()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    delete from public.scores;
+    delete from public.judges;
+end;
+$$;
+
+grant execute on function public.reset_scores_data() to anon, authenticated;
+grant execute on function public.reset_candidates_data() to anon, authenticated;
+grant execute on function public.reset_themes_data() to anon, authenticated;
+grant execute on function public.reset_score_basis_data() to anon, authenticated;
+grant execute on function public.reset_judges_data() to anon, authenticated;
 
 do $$
 begin

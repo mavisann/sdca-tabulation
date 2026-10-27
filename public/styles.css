@@ -1,19 +1,14 @@
 body { font-family: 'DM Sans', sans-serif; min-width: 320px; background: hsl(var(--b2)) !important; color: hsl(var(--bc)) !important; }
 
 html { color-scheme: light; background: hsl(var(--b2)); }
-html[data-theme='night'] { color-scheme: dark; }
+html,
 html[data-theme='light'] {
-    --p: 214 88% 52%;
-    --pf: 217 82% 45%;
-    --pc: 0 0% 100%;
+    --p: 43 96% 50%;
+    --pf: 39 94% 43%;
+    --pc: 32 70% 15%;
+    --sdca-red: #b5162a;
+    --sdca-gold: #d99a00;
 }
-html[data-theme='night'] {
-    --p: 199 89% 48%;
-    --pf: 199 89% 40%;
-    --pc: 0 0% 100%;
-}
-
-.theme-toggle { min-width: 2.5rem; }
 
 /* DaisyUI semantic surfaces keep the existing Tailwind structure coherent in both themes. */
 body.bg-slate-50,
@@ -32,18 +27,19 @@ body.bg-slate-950 { background: hsl(var(--b2)) !important; color: hsl(var(--bc))
 .border-slate-200 { border-color: hsl(var(--b3)) !important; }
 input, textarea, select { background-color: hsl(var(--b1)); color: hsl(var(--bc)); border-color: hsl(var(--b3)); }
 header { background-color: color-mix(in srgb, hsl(var(--b1)) 94%, transparent) !important; border-color: hsl(var(--b3)) !important; }
-html[data-theme='light'] body.bg-slate-950 .text-white { color: hsl(var(--bc)) !important; }
-html[data-theme='light'] body.bg-slate-950 .text-slate-400,
-html[data-theme='light'] body.bg-slate-950 .text-slate-500 { color: color-mix(in srgb, hsl(var(--bc)) 64%, transparent) !important; }
-html[data-theme='light'] .bg-slate-950 .border-white\/10 { border-color: hsl(var(--b3)) !important; }
-html[data-theme='night'] .bg-indigo-50,
-html[data-theme='night'] .bg-indigo-100,
-html[data-theme='night'] .bg-amber-50,
-html[data-theme='night'] .bg-emerald-50,
-html[data-theme='night'] .bg-red-50 { background-color: hsl(var(--b2)) !important; }
-html[data-theme='night'] .text-indigo-600,
-html[data-theme='night'] .text-indigo-700,
-html[data-theme='night'] .text-indigo-950 { color: hsl(var(--p)) !important; }
+body.bg-slate-950 .text-white { color: hsl(var(--bc)) !important; }
+.bg-indigo-600 { background-color: var(--sdca-red) !important; }
+.hover\:bg-indigo-700:hover { background-color: #941123 !important; }
+.text-indigo-600,
+.text-indigo-700 { color: var(--sdca-red) !important; }
+.bg-indigo-50,
+.bg-indigo-100 { background-color: #fff7dc !important; }
+.border-indigo-200 { border-color: #e8c35a !important; }
+.text-amber-600,
+.text-amber-700 { color: var(--sdca-gold) !important; }
+.bg-amber-50,
+.bg-amber-100 { background-color: #fff7dc !important; }
+.bg-red-600 { background-color: var(--sdca-red) !important; }
 
 button, a, [role='button'] { touch-action: manipulation; }
 button, [role='button'] { user-select: none; -webkit-user-select: none; }
@@ -87,5 +83,4 @@ button, [role='button'] { user-select: none; -webkit-user-select: none; }
 @media (max-width: 767px) {
     header > div { padding-inline: 1rem; }
     table { min-width: 38rem; }
-    .theme-toggle { margin-left: auto; }
 }
