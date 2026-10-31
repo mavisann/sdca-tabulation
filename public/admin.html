@@ -65,10 +65,11 @@
                     </div>
                     <div>
                         <label for="candidate-category" class="mb-1.5 block text-sm font-semibold text-slate-700">Category</label>
-                        <select id="candidate-category" name="category" required class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
-                            <option value="Mr">Mr.</option>
-                            <option value="Ms">Ms.</option>
-                        </select>
+                        <input type="hidden" id="candidate-category" name="category" value="Mr">
+                        <div class="grid grid-cols-2 gap-2" role="group" aria-label="Candidate category">
+                            <button type="button" data-category="Mr" class="candidate-category-button rounded-xl border-2 border-indigo-500 bg-indigo-50 px-3 py-2.5 text-sm font-bold text-indigo-700">Mr.</button>
+                            <button type="button" data-category="Ms" class="candidate-category-button rounded-xl border-2 border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-600">Ms.</button>
+                        </div>
                     </div>
                     <div>
                         <label for="candidate-image" class="mb-1.5 block text-sm font-semibold text-slate-700">Photo URL</label>

@@ -24,6 +24,20 @@ function renderAdmin() {
         button.classList.toggle('bg-white', !selected);
         button.classList.toggle('text-slate-700', !selected);
     });
+    updateCandidateCategoryButtons();
+}
+
+function updateCandidateCategoryButtons() {
+    const selectedCategory = document.getElementById('candidate-category')?.value || 'Mr';
+    document.querySelectorAll('[data-category]').forEach(button => {
+        const selected = button.dataset.category === selectedCategory;
+        button.classList.toggle('border-indigo-500', selected);
+        button.classList.toggle('bg-indigo-50', selected);
+        button.classList.toggle('text-indigo-700', selected);
+        button.classList.toggle('border-slate-200', !selected);
+        button.classList.toggle('bg-white', !selected);
+        button.classList.toggle('text-slate-600', !selected);
+    });
 }
 
 function renderAdminTabs() {
@@ -447,6 +461,7 @@ function editCandidate(id) {
     document.getElementById('candidate-name').value = candidate.name;
     document.getElementById('candidate-program').value = candidate.program;
     document.getElementById('candidate-category').value = candidate.category;
+    updateCandidateCategoryButtons();
     document.getElementById('candidate-image').value = candidate.image.startsWith('data:')
         ? ''
         : candidate.image;
@@ -464,6 +479,7 @@ function cancelEdit() {
     document.getElementById('candidate-id').value = '';
     document.getElementById('btn-save-candidate').textContent = 'Add Candidate';
     document.getElementById('btn-cancel-edit').classList.add('hidden');
+    updateCandidateCategoryButtons();
     showPhotoPreview('');
 }
 
@@ -524,6 +540,20 @@ function clearStage() {
 }
 
 document.getElementById('candidate-form').addEventListener('submit', saveCandidate);
+document.querySelectorAll('[data-category]').forEach(button => {
+    button.addEventListener('click', () => {
+        document.getElementById('candidate-category').value = button.dataset.category;
+        document.querySelectorAll('[data-category]').forEach(categoryButton => {
+            const selected = categoryButton === button;
+            categoryButton.classList.toggle('border-indigo-500', selected);
+            categoryButton.classList.toggle('bg-indigo-50', selected);
+            categoryButton.classList.toggle('text-indigo-700', selected);
+            categoryButton.classList.toggle('border-slate-200', !selected);
+            categoryButton.classList.toggle('bg-white', !selected);
+            categoryButton.classList.toggle('text-slate-600', !selected);
+        });
+    });
+});
 document.getElementById('candidate-list-body').addEventListener('click', event => {
     const editButton = event.target.closest('[data-edit-id]');
     const deleteButton = event.target.closest('[data-delete-id]');

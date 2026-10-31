@@ -35,17 +35,22 @@ async function requireJudgeLogin() {
     });
 }
 
-function renderScoreOptions(criteria = getThemeCriteria(activeStage.currentTheme)) {
+function renderScoreOptions(stageCandidates, criteria = getThemeCriteria(activeStage.currentTheme)) {
     const container = document.getElementById('score-criteria-options');
     if (!container) return;
-    container.innerHTML = criteria.map((criterion, criterionIndex) => {
-        const maxScore = Math.max(4, Math.min(10, criterion.maxScore));
-        return `
-        <fieldset class="score-fieldset rounded-2xl border border-base-300 bg-base-200 p-4">
-            <legend class="mb-3 flex w-full items-center justify-between gap-3 text-sm font-bold text-base-content"><span>${escapeHtml(criterion.name)}</span><span class="badge badge-primary badge-sm font-extrabold">4–${maxScore}</span></legend>
-            <input class="score-input w-full rounded-xl border border-base-300 bg-base-100 px-3 py-3 text-lg font-bold outline-none focus:border-primary focus:ring-4 focus:ring-primary/20" type="number" name="score-criterion-${criterionIndex}" min="4" max="${maxScore}" step="0.01" inputmode="decimal" required aria-label="${escapeHtml(criterion.name)} score" placeholder="4.00–${maxScore}.00">
-        </fieldset>`;
-    }).join('');
+    container.innerHTML = stageCandidates.map(candidate => `
+        <section class="rounded-2xl border border-base-300 bg-base-200 p-4" data-score-candidate="${escapeHtml(candidate.id)}">
+            <div class="mb-4 flex items-center gap-3"><span class="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-extrabold text-indigo-700">${candidate.category}</span><div><h3 class="font-extrabold text-slate-950">${escapeHtml(candidate.name)}</h3><p class="text-xs text-slate-500">${escapeHtml(candidate.program)}</p></div></div>
+            <div class="space-y-4">${criteria.map((criterion, criterionIndex) => {
+                const maxScore = Math.max(4, Math.min(10, criterion.maxScore));
+                return `<fieldset class="score-fieldset rounded-xl border border-base-300 bg-base-100 p-3">
+                    <legend class="mb-2 flex w-full items-center justify-between gap-3 text-sm font-bold text-base-content"><span>${escapeHtml(criterion.name)}</span><span class="badge badge-primary badge-sm font-extrabold">4–${maxScore}</span></legend>
+                    <input class="score-input w-full rounded-xl border border-base-300 bg-base-100 px-3 py-3 text-lg font-bold outline-none focus:border-primary focus:ring-4 focus:ring-primary/20" type="number" name="score-criterion-${candidate.id}-${criterionIndex}" min="4" max="${maxScore}" step="0.01" inputmode="decimal" required aria-label="${escapeHtml(criterion.name)} score for ${escapeHtml(candidate.name)}" placeholder="4.00–${maxScore}.00">
+                </fieldset>`;
+            }).join('')}</div>
+            <label class="mt-4 block text-sm font-bold text-slate-800">Remarks <span class="font-normal text-slate-400">(optional)</span></label>
+            <textarea name="score-remarks-${candidate.id}" rows="3" maxlength="1000" placeholder="Share brief, constructive feedback..." class="mt-2 w-full resize-y rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50"></textarea>
+        </section>`).join('');
 }
 
 function showJudgeWaiting(title, copy) {
@@ -69,7 +74,7 @@ function renderJudge() {
 
     const scoreKey = `${stageCandidates.map(candidate => candidate.id).join('-')}_${activeStage.currentTheme}_${activeStage.updatedAt || 'new'}`;
     const form = document.getElementById('scoring-form');
-    renderScoreOptions();
+    renderScoreOptions(stageCandidates);
     const hasScored = stageCandidates.every(candidate => (scores[candidate.id]?.[activeStage.currentTheme] || [])
         .some(score => authenticatedJudge?.id
             ? score.judgeId === authenticatedJudge.id
@@ -107,23 +112,22 @@ async function submitScores(event) {
     }
 
     const criteria = getThemeCriteria(activeStage.currentTheme);
-    const values = {};
-    for (const [criterionIndex, criterion] of criteria.entries()) {
-        const selected = document.querySelector(`input[name="score-criterion-${criterionIndex}"]`);
-        const value = Number(selected?.value);
-        if (!selected || !Number.isFinite(value) || value < 4 || value > 10 || value > criterion.maxScore) {
-            showAppMessage('Select a score for every scoring basis.', 'error');
-            return;
+    const submissions = [];
+    for (const candidate of stageCandidates) {
+        const values = {};
+        for (const [criterionIndex, criterion] of criteria.entries()) {
+            const selected = document.querySelector(`input[name="score-criterion-${candidate.id}-${criterionIndex}"]`);
+            const value = Number(selected?.value);
+            if (!selected || !Number.isFinite(value) || value < 4 || value > 10 || value > criterion.maxScore) {
+                showAppMessage(`Select every score for ${candidate.name}.`, 'error');
+                return;
+            }
+            values[criterion.id || criterion.name] = value;
         }
-        values[criterion.id || criterion.name] = value;
+        values.remarks = document.querySelector(`textarea[name="score-remarks-${candidate.id}"]`)?.value.trim() || '';
+        values.total = criteria.reduce((total, criterion) => total + Number(values[criterion.id || criterion.name] || 0), 0);
+        submissions.push({ candidate, values });
     }
-
-    values.remarks = document.getElementById('score-remarks').value.trim();
-    values.total = criteria.reduce(
-        (total, criterion) => total + Number(values[criterion.id || criterion.name] || 0),
-        0
-    );
-    values.submittedAt = new Date().toISOString();
     const confirmed = await openConfirmModal({
         title: 'Confirm score submission',
         message: `Submit your scores for ${stageCandidates.map(candidate => candidate.name).join(' and ')}? You will not be able to score this group and theme again.`,
@@ -131,15 +135,14 @@ async function submitScores(event) {
     });
     if (!confirmed) return;
     try {
-        const scoreValues = criteria.map(criterion => values[criterion.id || criterion.name]);
-        const { error } = await db.from('scores').insert(stageCandidates.map(candidate => ({
+        const { error } = await db.from('scores').insert(submissions.map(({ candidate, values }) => ({
             candidate_id: candidate.id,
             theme: activeStage.currentTheme,
             judge_id: authenticatedJudge.id,
             judge_name: getJudgeName(),
-            poise: scoreValues[0] ?? null,
-            presence: scoreValues[1] ?? null,
-            qa: scoreValues[2] ?? null,
+            poise: values[criteria[0]?.id || criteria[0]?.name] ?? null,
+            presence: values[criteria[1]?.id || criteria[1]?.name] ?? null,
+            qa: values[criteria[2]?.id || criteria[2]?.name] ?? null,
             criteria: Object.fromEntries(criteria.map(criterion => [
                 criterion.id || criterion.name,
                 {
@@ -150,7 +153,7 @@ async function submitScores(event) {
             ])),
             remarks: values.remarks,
             total: Number(values.total.toFixed(2)),
-            submitted_at: values.submittedAt
+            submitted_at: new Date().toISOString()
         })));
         if (error) throw error;
         await syncData();
@@ -163,6 +166,82 @@ async function submitScores(event) {
 }
 
 document.getElementById('scoring-form').addEventListener('submit', submitScores);
+
+function getStoredCriterionValue(score, criterion) {
+    return Number(score.criteria?.[criterion.id || criterion.name]?.value ?? score[criterion.name]);
+}
+
+function renderJudgeScoreReview() {
+    const container = document.getElementById('judge-score-review-list');
+    if (!container) return;
+    const rows = [];
+    candidates.forEach(candidate => {
+        Object.entries(scores[candidate.id] || {}).forEach(([themeId, themeScores]) => {
+            themeScores
+                .filter(score => score.judgeId === authenticatedJudge?.id)
+                .forEach(score => rows.push({ candidate, themeId, score }));
+        });
+    });
+    if (rows.length === 0) {
+        container.innerHTML = '<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">You have not submitted any scores yet.</p>';
+        return;
+    }
+    container.innerHTML = rows.map(({ candidate, themeId, score }) => {
+        const criteria = getThemeCriteria(themeId);
+        return `<form class="judge-score-review-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" data-score-id="${escapeHtml(score.id)}" data-theme-id="${escapeHtml(themeId)}">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-wide text-indigo-600">${escapeHtml(getThemeName(themeId))}</p><h3 class="text-lg font-extrabold text-slate-950">${escapeHtml(candidate.category)} · ${escapeHtml(candidate.name)}</h3><p class="text-xs text-slate-500">${escapeHtml(candidate.program)}</p></div><strong class="rounded-full bg-indigo-50 px-3 py-1 text-sm text-indigo-700">Current total: ${score.total}</strong></div>
+            <div class="grid gap-3 sm:grid-cols-2">${criteria.map((criterion, index) => {
+                const maxScore = Math.max(4, Math.min(10, criterion.maxScore));
+                return `<label class="text-sm font-bold text-slate-700">${escapeHtml(criterion.name)}<input class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 font-bold" name="review-score-${index}" type="number" min="4" max="${maxScore}" step="0.01" required value="${getStoredCriterionValue(score, criterion)}"></label>`;
+            }).join('')}</div>
+            <label class="mt-4 block text-sm font-bold text-slate-700">Remarks<textarea name="review-remarks" rows="3" maxlength="1000" class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm">${escapeHtml(score.remarks)}</textarea></label>
+            <button type="submit" class="mt-4 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">Save changes</button>
+        </form>`;
+    }).join('');
+    container.querySelectorAll('.judge-score-review-card').forEach(form => {
+        form.addEventListener('submit', saveReviewedScore);
+    });
+}
+
+async function saveReviewedScore(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const score = Object.values(scores).flatMap(candidateScores => Object.values(candidateScores).flat()).find(item => item.id === form.dataset.scoreId);
+    if (!score) return;
+    const criteria = getThemeCriteria(form.dataset.themeId);
+    const values = {};
+    for (const [index, criterion] of criteria.entries()) {
+        const value = Number(form.querySelector(`[name="review-score-${index}"]`)?.value);
+        if (!Number.isFinite(value) || value < 4 || value > 10 || value > criterion.maxScore) {
+            showAppMessage('Enter valid scores for every scoring basis.', 'error');
+            return;
+        }
+        values[criterion.id || criterion.name] = value;
+    }
+    const payload = {
+        poise: values[criteria[0]?.id || criteria[0]?.name] ?? null,
+        presence: values[criteria[1]?.id || criteria[1]?.name] ?? null,
+        qa: values[criteria[2]?.id || criteria[2]?.name] ?? null,
+        criteria: Object.fromEntries(criteria.map(criterion => [
+            criterion.id || criterion.name,
+            { name: criterion.name, maxScore: criterion.maxScore, value: values[criterion.id || criterion.name] }
+        ])),
+        remarks: form.querySelector('[name="review-remarks"]').value.trim(),
+        total: Number(Object.values(values).reduce((sum, value) => sum + value, 0).toFixed(2)),
+        submitted_at: new Date().toISOString()
+    };
+    try {
+        const { error } = await db.from('scores').update(payload).eq('id', form.dataset.scoreId).eq('judge_id', authenticatedJudge.id);
+        if (error) throw error;
+        await syncData();
+        renderAll();
+        renderJudgeScoreReview();
+        showAppMessage('Score changes saved.');
+    } catch (error) {
+        handleWriteError(error, 'update the score');
+    }
+}
+
 function renderJudgeLeaderboards() {
     const renderList = (containerId, ranked, scoreLabel) => {
         const container = document.getElementById(containerId);
@@ -182,6 +261,11 @@ document.getElementById('btn-open-judge-leaderboards').addEventListener('click',
     document.getElementById('judge-leaderboard-modal').showModal();
 });
 document.getElementById('btn-close-judge-leaderboards').addEventListener('click', () => document.getElementById('judge-leaderboard-modal').close());
+document.getElementById('btn-review-judge-scores').addEventListener('click', () => {
+    renderJudgeScoreReview();
+    document.getElementById('judge-score-review-modal').showModal();
+});
+document.getElementById('btn-close-judge-score-review').addEventListener('click', () => document.getElementById('judge-score-review-modal').close());
 document.getElementById('btn-judge-logout').addEventListener('click', async () => {
     const confirmed = await openConfirmModal({
         title: 'Log out of judge panel?',
