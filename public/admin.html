@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#f8fafc">
     <title>Admin Management | Mr. &amp; Ms. SDCA Tabulation</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.24/dist/full.min.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -13,10 +14,20 @@
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body class="min-h-screen bg-base-200 text-base-content">
+    <div id="admin-password-gate" class="fixed inset-0 z-50 grid place-items-center bg-slate-950/80 p-4">
+        <form id="admin-password-form" class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <img src="./assets/sdca-logo.jpg" alt="Mr. &amp; Ms. SDCA" class="mx-auto h-20 w-20 rounded-2xl object-cover">
+            <h1 class="mt-4 text-2xl font-extrabold text-slate-950">Admin access</h1>
+            <p class="mt-2 text-sm text-slate-500">Enter the management password to continue.</p>
+            <input id="admin-password" type="password" required autocomplete="current-password" class="mt-4 w-full rounded-xl border border-slate-200 px-3 py-3 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+            <p id="admin-password-error" class="mt-2 hidden text-sm font-semibold text-red-600">Incorrect password.</p>
+            <button class="mt-4 w-full rounded-xl bg-indigo-600 px-4 py-3 font-bold text-white hover:bg-indigo-700">Open management</button>
+        </form>
+    </div>
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div class="flex items-center gap-3">
-                <span class="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-600 text-white"><i class="fa-solid fa-crown text-xl"></i></span>
+                <img src="./assets/sdca-logo.jpg" alt="Mr. &amp; Ms. SDCA" class="h-11 w-11 rounded-2xl object-cover">
                 <span><span class="block text-sm font-bold text-slate-900">Mr. &amp; Ms. SDCA</span><span class="block text-xs text-slate-500">Tabulation Admin</span></span>
             </div>
             <div class="flex items-center gap-2">
@@ -34,6 +45,7 @@
             <button type="button" data-admin-tab="leaderboard" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Live leaderboard</button>
             <button type="button" data-admin-tab="scorebook" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Scorebook</button>
             <button type="button" data-admin-tab="judges" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Judges</button>
+            <button type="button" data-admin-tab="reports" class="admin-tab rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50">Reports</button>
         </nav>
 
         <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -55,6 +67,10 @@
                 </div>
                 <form id="candidate-form" class="space-y-4">
                     <input type="hidden" id="candidate-id">
+                    <div>
+                        <label for="candidate-number" class="mb-1.5 block text-sm font-semibold text-slate-700">Contestant number</label>
+                        <input id="candidate-number" name="candidateNumber" maxlength="20" placeholder="e.g. 01 (can be shared)" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                    </div>
                     <div>
                         <label for="candidate-name" class="mb-1.5 block text-sm font-semibold text-slate-700">Candidate name</label>
                         <input id="candidate-name" name="name" required maxlength="100" autocomplete="name" placeholder="Full name" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
@@ -122,6 +138,10 @@
                                 <option value="">No theme selected</option>
                             </select>
                             <button id="btn-clear-stage" type="button" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Clear stage</button>
+                            <label class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm font-bold text-emerald-700">
+                                <input id="score-review-enabled" type="checkbox" class="h-4 w-4 accent-emerald-600">
+                                Allow judge score review
+                            </label>
                         </div>
                     </div>
                     <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" id="admin-stage-grid"></div>
@@ -184,6 +204,11 @@
                 <button class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700">Save judge</button>
             </form>
             <div class="mt-6 overflow-x-auto"><table class="w-full text-left"><thead><tr class="text-[11px] uppercase tracking-wide text-slate-400"><th class="px-3 py-2">Judge</th><th class="px-3 py-2">Access code</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Actions</th></tr></thead><tbody id="judge-list-body"></tbody></table></div>
+        </section>
+        <section data-admin-panel="reports" class="hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <h2 class="text-lg font-bold text-slate-900">System report</h2>
+            <p class="mt-1 text-sm text-slate-500">Generate a paginated PDF containing scores by judge, theme, candidate, category, program, computations, and rankings.</p>
+            <button id="btn-generate-report" type="button" class="mt-5 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-700"><i class="fa-solid fa-file-pdf mr-2"></i>Generate complete PDF report</button>
         </section>
     </main>
 

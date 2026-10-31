@@ -16,6 +16,8 @@ function renderAdmin() {
     }
     renderAdminCandidates();
     renderAdminStage();
+    const scoreReviewToggle = document.getElementById('score-review-enabled');
+    if (scoreReviewToggle) scoreReviewToggle.checked = activeStage.scoreReviewEnabled === true;
     renderLeaderboard('admin-leaderboard', { showAverage: true });
     document.querySelectorAll('[data-stage-mode]').forEach(button => {
         const selected = button.dataset.stageMode === (activeStage.stageMode || 'mr');
@@ -294,7 +296,7 @@ function renderAdminCandidates() {
         const row = document.createElement('tr');
         row.className = 'border-b border-slate-100 last:border-0';
         row.innerHTML = `
-            <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-slate-700">${escapeHtml(candidate.id)}</td>
+            <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-slate-700">${escapeHtml(candidate.candidateNumber || candidate.id)}</td>
             <td class="px-4 py-3"><img src="${escapeHtml(candidate.image)}" alt="" class="h-16 w-12 rounded-lg bg-slate-100 object-contain" onerror="this.src='${DEFAULT_PHOTO}'"></td>
             <td class="min-w-40 px-4 py-3"><p class="font-semibold text-slate-800">${escapeHtml(candidate.name)}</p><p class="text-xs text-slate-500">${candidate.category} · ${escapeHtml(candidate.program)}</p></td>
             <td class="px-4 py-3 text-sm font-bold text-indigo-700">${candidate.category}</td>
@@ -409,6 +411,7 @@ function createCandidateId() {
 async function saveCandidate(event) {
     event.preventDefault();
     const id = document.getElementById('candidate-id').value;
+    const candidateNumber = document.getElementById('candidate-number').value.trim();
     const name = document.getElementById('candidate-name').value.trim();
     const program = document.getElementById('candidate-program').value.trim();
     const category = document.getElementById('candidate-category').value;
@@ -438,10 +441,10 @@ async function saveCandidate(event) {
     }
 
     try {
-        const candidate = { id: id || createCandidateId(), name, program, category, image };
+        const candidate = { id: id || createCandidateId(), candidate_number: candidateNumber, name, program, category, image };
         const result = existing
             ? await db.from('candidates')
-                .update({ name, program, category, image })
+                .update({ candidate_number: candidateNumber, name, program, category, image })
                 .eq('id', id)
             : await db.from('candidates').insert(candidate);
         if (result.error) throw result.error;
@@ -458,6 +461,7 @@ function editCandidate(id) {
     const candidate = candidates.find(item => item.id === id);
     if (!candidate) return;
     document.getElementById('candidate-id').value = candidate.id;
+    document.getElementById('candidate-number').value = candidate.candidateNumber;
     document.getElementById('candidate-name').value = candidate.name;
     document.getElementById('candidate-program').value = candidate.program;
     document.getElementById('candidate-category').value = candidate.category;
@@ -504,6 +508,7 @@ async function persistStage(nextStage) {
             active_candidate_id: nextStage.activeCandidateIds?.[0] || nextStage.activeCandidateId || null,
             active_candidate_ids: nextStage.activeCandidateIds || [],
             stage_mode: nextStage.stageMode || 'mr',
+            score_review_enabled: nextStage.scoreReviewEnabled === true,
             current_theme: nextStage.currentTheme,
             updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
@@ -537,6 +542,91 @@ function setStageProgram(program) {
 
 function clearStage() {
     return persistStage({ ...activeStage, activeCandidateId: null, activeCandidateIds: [] });
+}
+
+function addReportPage(doc, title, lines) {
+    doc.addPage();
+    doc.setFontSize(18);
+    doc.setTextColor(30, 41, 59);
+    doc.text(title, 20, 22);
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    let y = 34;
+    lines.forEach(line => {
+        const wrapped = doc.splitTextToSize(line, 170);
+        if (y + wrapped.length * 5 > 275) {
+            doc.addPage();
+            y = 20;
+        }
+        doc.text(wrapped, 20, y);
+        y += wrapped.length * 5 + 2;
+    });
+}
+
+function generateSystemReport() {
+    if (!window.jspdf?.jsPDF) {
+        showAppMessage('The PDF generator could not be loaded. Check your internet connection.', 'error');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFillColor(30, 41, 59);
+    doc.rect(0, 0, 210, 297, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(25);
+    doc.text('Mr. & Ms. SDCA Tabulation', 20, 35);
+    doc.setFontSize(16);
+    doc.text('Complete System Report', 20, 47);
+    doc.setFontSize(10);
+    doc.text(`Generated ${new Date().toLocaleString()}`, 20, 60);
+    doc.text(`${candidates.length} candidates · ${judges.length} judges · ${themes.length} themes`, 20, 68);
+    addReportPage(doc, 'Candidate summary', candidates.map(candidate =>
+        `${candidate.category} #${candidate.candidateNumber || '—'} · ${candidate.name} · ${candidate.program}`
+    ));
+    addReportPage(doc, 'Scores by judge', judges.flatMap(judge => {
+        const judgeScores = candidates.flatMap(candidate => Object.entries(scores[candidate.id] || {}).flatMap(([themeId, rows]) =>
+            rows.filter(score => score.judgeId === judge.id).map(score => ({ candidate, themeId, score }))
+        ));
+        return [`${judge.name} — ${judgeScores.length} scores`, ...judgeScores.map(({ candidate, themeId, score }) =>
+            `${candidate.category} #${candidate.candidateNumber || '—'} ${candidate.name} · ${getThemeName(themeId)} · Total ${score.total} · Remarks: ${score.remarks || '—'}`
+        )];
+    }));
+    addReportPage(doc, 'Scores by theme', themes.flatMap(theme => {
+        const rows = candidates.flatMap(candidate => (scores[candidate.id]?.[theme.id] || []));
+        return [
+            `${theme.name} — ${rows.length} submitted scores`,
+            ...rows.map(score => {
+                const candidate = candidates.find(item => (scores[item.id]?.[theme.id] || []).some(row => row.id === score.id));
+                return `${candidate?.name || 'Unknown'} · ${score.judgeName} · Total ${score.total}`;
+            })
+        ];
+    }));
+    addReportPage(doc, 'Candidate computations', candidates.flatMap(candidate => [
+        `${candidate.category} #${candidate.candidateNumber || '—'} · ${candidate.name} · ${candidate.program}`,
+        `Average: ${getCandidateAverageScore(candidate.id).toFixed(2)} · Score entries: ${Object.values(scores[candidate.id] || {}).flat().length}`
+    ]));
+    addReportPage(doc, 'Rankings', ['Mr. rankings', ...getRankedCandidates().filter(candidate => candidate.category === 'Mr').map((candidate, index) => `${index + 1}. ${candidate.name} · ${candidate.program} · ${candidate.totalScore.toFixed(2)}`), '', 'Ms. rankings', ...getRankedCandidates().filter(candidate => candidate.category === 'Ms').map((candidate, index) => `${index + 1}. ${candidate.name} · ${candidate.program} · ${candidate.totalScore.toFixed(2)}`)]);
+    doc.save(`sdca-system-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+function requireAdminPassword() {
+    const gate = document.getElementById('admin-password-gate');
+    const form = document.getElementById('admin-password-form');
+    return new Promise(resolve => {
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            if (document.getElementById('admin-password').value === 'ilovesdca') {
+                gate.remove();
+                resolve();
+                return;
+            }
+            document.getElementById('admin-password-error').classList.remove('hidden');
+        });
+    });
+}
+
+function toggleScoreReview() {
+    return persistStage({ ...activeStage, scoreReviewEnabled: document.getElementById('score-review-enabled').checked });
 }
 
 document.getElementById('candidate-form').addEventListener('submit', saveCandidate);
@@ -579,6 +669,8 @@ document.getElementById('candidate-photo-file').addEventListener('change', handl
 document.getElementById('stage-theme').addEventListener('change', updateStageTheme);
 document.getElementById('btn-cancel-edit').addEventListener('click', cancelEdit);
 document.getElementById('btn-clear-stage').addEventListener('click', clearStage);
+document.getElementById('score-review-enabled').addEventListener('change', toggleScoreReview);
+document.getElementById('btn-generate-report').addEventListener('click', generateSystemReport);
 document.getElementById('theme-form').addEventListener('submit', saveTheme);
 document.getElementById('btn-cancel-theme').addEventListener('click', () => {
     document.getElementById('theme-form').reset();
@@ -642,4 +734,4 @@ document.querySelectorAll('[data-reset-rpc]').forEach(button => {
     ));
 });
 
-initApp('admin');
+requireAdminPassword().then(() => initApp('admin'));

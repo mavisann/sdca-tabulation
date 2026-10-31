@@ -2,7 +2,7 @@ let candidates = [];
 let themes = [];
 let themeCriteria = {};
 let judges = [];
-let activeStage = { activeCandidateId: null, activeCandidateIds: [], stageMode: 'mr', currentTheme: null, updatedAt: null };
+let activeStage = { activeCandidateId: null, activeCandidateIds: [], stageMode: 'mr', scoreReviewEnabled: false, currentTheme: null, updatedAt: null };
 let scores = {};
 let currentRole = null;
 let db = null;
@@ -49,6 +49,7 @@ async function syncData() {
 
     candidates = (candidateResult.data || []).map(candidate => ({
         id: candidate.id,
+        candidateNumber: candidate.candidate_number || '',
         name: candidate.name,
         program: candidate.program || '',
         image: candidate.image || '',
@@ -80,10 +81,11 @@ async function syncData() {
                 ? stage.active_candidate_ids
                 : stage.active_candidate_id ? [stage.active_candidate_id] : [],
             stageMode: ['mr', 'ms', 'program'].includes(stage.stage_mode) ? stage.stage_mode : 'mr',
+            scoreReviewEnabled: stage.score_review_enabled === true,
             currentTheme: stage.current_theme || null,
             updatedAt: stage.updated_at || null
         }
-        : { activeCandidateId: null, activeCandidateIds: [], stageMode: 'mr', currentTheme: null, updatedAt: null };
+        : { activeCandidateId: null, activeCandidateIds: [], stageMode: 'mr', scoreReviewEnabled: false, currentTheme: null, updatedAt: null };
 
     scores = {};
     (scoreResult.data || []).forEach(score => {
@@ -308,6 +310,7 @@ async function resetAdminDataDirect(kind) {
                     active_candidate_id: null,
                     active_candidate_ids: [],
                     stage_mode: 'mr',
+                    score_review_enabled: false,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', true);
@@ -322,6 +325,7 @@ async function resetAdminDataDirect(kind) {
                     active_candidate_id: null,
                     active_candidate_ids: [],
                     stage_mode: 'mr',
+                    score_review_enabled: false,
                     current_theme: null,
                     updated_at: new Date().toISOString()
                 })

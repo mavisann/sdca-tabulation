@@ -16,13 +16,12 @@
     <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div class="flex items-center gap-3">
-                <span class="grid h-11 w-11 place-items-center rounded-2xl bg-indigo-600 text-white"><i class="fa-solid fa-scale-balanced text-xl"></i></span>
+                <img src="./assets/sdca-logo.jpg" alt="Mr. &amp; Ms. SDCA" class="h-11 w-11 rounded-2xl object-cover">
                 <span><span class="block text-sm font-bold text-slate-900">Mr. &amp; Ms. SDCA</span><span class="block text-xs text-slate-500">Judge Scoring Panel</span></span>
             </div>
             <div class="flex items-center gap-2">
                 <a href="./mr_ms_sdca_tabulation.html" class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-arrow-left mr-2"></i>Back</a>
                 <button id="btn-open-judge-leaderboards" type="button" class="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"><i class="fa-solid fa-ranking-star mr-2"></i>Leaderboards</button>
-                <button id="btn-review-judge-scores" type="button" class="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"><i class="fa-solid fa-pen-to-square mr-2"></i>Review my scores</button>
                 <button id="btn-judge-logout" type="button" class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">Log out</button>
                 <span class="rounded-full bg-indigo-50 px-3 py-2 text-xs font-bold uppercase tracking-wide text-indigo-700">Judge view</span>
             </div>
@@ -47,6 +46,18 @@
 
         <div data-judge-content class="hidden grid gap-6 lg:grid-cols-12">
             <section class="lg:col-span-12">
+                <section id="judge-review-stage" class="hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
+                    <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                        <div><p class="text-xs font-bold uppercase tracking-[.2em] text-emerald-600">Score review mode</p><h2 class="text-xl font-extrabold text-slate-950">Review your submitted scores</h2><p class="mt-1 text-sm text-slate-500">Choose Mr., Ms., or By program, select contestants, then open their scores.</p></div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" data-review-mode="mr" class="review-mode-button rounded-xl bg-indigo-600 px-3 py-2 text-sm font-bold text-white">Mr.</button>
+                            <button type="button" data-review-mode="ms" class="review-mode-button rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700">Ms.</button>
+                            <button type="button" data-review-mode="program" class="review-mode-button rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700">By program</button>
+                        </div>
+                    </div>
+                    <div id="judge-review-stage-grid" class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"></div>
+                    <button id="btn-open-selected-score-review" type="button" class="mt-5 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700">Review selected scores</button>
+                </section>
                 <div id="judge-waiting" class="flex min-h-[440px] flex-col items-center justify-center rounded-2xl border border-slate-100 bg-white px-6 py-12 text-center shadow-sm">
                     <span class="mb-5 grid h-20 w-20 place-items-center rounded-full bg-indigo-50 text-indigo-600"><i class="fa-regular fa-hourglass-half text-4xl"></i></span>
                     <h2 id="judge-waiting-title" class="text-2xl font-bold text-slate-900">Waiting for candidate to take the stage...</h2>
@@ -78,11 +89,11 @@
                 <div><p class="text-xs font-bold uppercase tracking-[.2em] text-indigo-600">Confidential</p><h2 class="mt-1 text-2xl font-extrabold text-slate-950">Leaderboards</h2></div>
                 <button id="btn-close-judge-leaderboards" type="button" class="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100" aria-label="Close leaderboards"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="mt-6 grid gap-6 md:grid-cols-2">
-                <section><h3 class="font-bold text-slate-900">Your Mr. ranking</h3><div id="judge-personal-mr" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
-                <section><h3 class="font-bold text-slate-900">Your Ms. ranking</h3><div id="judge-personal-ms" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
-                <section><h3 class="font-bold text-slate-900">Overall Mr. ranking</h3><div id="judge-overall-mr" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
-                <section><h3 class="font-bold text-slate-900">Overall Ms. ranking</h3><div id="judge-overall-ms" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
+            <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <section class="rounded-2xl border border-sky-100 bg-sky-50/60 p-4"><h3 class="font-bold text-sky-950">Your leaderboard — Mr.</h3><p class="mt-1 text-xs text-sky-700">Your scores for Mr.</p><div id="judge-personal-mr" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
+                <section class="rounded-2xl border border-rose-100 bg-rose-50/60 p-4"><h3 class="font-bold text-rose-950">Your leaderboard — Ms.</h3><p class="mt-1 text-xs text-rose-700">Your scores for Ms.</p><div id="judge-personal-ms" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
+                <section class="rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4"><h3 class="font-bold text-cyan-950">Overall ranking — Mr.</h3><p class="mt-1 text-xs text-cyan-700">Scores hidden.</p><div id="judge-overall-mr" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
+                <section class="rounded-2xl border border-fuchsia-100 bg-fuchsia-50/60 p-4"><h3 class="font-bold text-fuchsia-950">Overall ranking — Ms.</h3><p class="mt-1 text-xs text-fuchsia-700">Scores hidden.</p><div id="judge-overall-ms" class="mt-3 max-h-[28rem] space-y-2 overflow-y-auto custom-scrollbar"></div></section>
             </div>
         </div>
     </dialog>

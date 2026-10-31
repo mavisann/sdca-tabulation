@@ -1,5 +1,7 @@
 const JUDGE_PHOTO_FALLBACK = 'https://placehold.co/600x800/e0e7ff/3730a3?text=Candidate';
 let authenticatedJudge = null;
+let reviewMode = 'mr';
+let selectedReviewCandidateIds = [];
 
 function getJudgeName() {
     return authenticatedJudge?.name || 'Judge 1';
@@ -60,8 +62,69 @@ function showJudgeWaiting(title, copy) {
     document.getElementById('judge-waiting-copy').textContent = copy;
 }
 
+function renderJudgeReviewStage() {
+    document.getElementById('judge-review-stage').classList.remove('hidden');
+    document.getElementById('judge-waiting').classList.add('hidden');
+    document.getElementById('judge-active').classList.add('hidden');
+    const grid = document.getElementById('judge-review-stage-grid');
+    const hasJudgeScore = candidate => Object.values(scores[candidate.id] || {})
+        .flat()
+        .some(score => score.judgeId === authenticatedJudge?.id);
+    const reviewCandidates = candidates.filter(hasJudgeScore);
+    const visibleCandidates = reviewMode === 'program'
+        ? reviewCandidates
+        : reviewCandidates.filter(candidate => candidate.category.toLowerCase() === reviewMode);
+    grid.replaceChildren();
+    if (reviewMode === 'program') {
+        [...new Set(reviewCandidates.map(candidate => candidate.program))].forEach(program => {
+            const group = reviewCandidates.filter(candidate => candidate.program === program);
+            const selected = group.every(candidate => selectedReviewCandidateIds.includes(candidate.id));
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = `rounded-2xl border-2 p-4 text-left ${selected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white'}`;
+            card.innerHTML = `<span class="block text-lg font-extrabold text-slate-900">${escapeHtml(program)}</span><span class="mt-1 block text-xs text-slate-500">${group.map(candidate => `${candidate.category} · ${escapeHtml(candidate.name)}`).join(' / ')}</span>`;
+            card.addEventListener('click', () => {
+                selectedReviewCandidateIds = selected
+                    ? selectedReviewCandidateIds.filter(id => !group.some(candidate => candidate.id === id))
+                    : [...new Set([...selectedReviewCandidateIds, ...group.map(candidate => candidate.id)])];
+                renderJudgeReviewStage();
+            });
+            grid.appendChild(card);
+        });
+    } else {
+        visibleCandidates.forEach(candidate => {
+            const selected = selectedReviewCandidateIds.includes(candidate.id);
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = `overflow-hidden rounded-2xl border-2 text-left ${selected ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-100' : 'border-slate-200 bg-white'}`;
+            card.innerHTML = `<img src="${escapeHtml(candidate.image)}" alt="" class="h-40 w-full object-contain" onerror="this.src='${JUDGE_PHOTO_FALLBACK}'"><span class="block p-3"><span class="block text-sm font-bold text-slate-900">${candidate.category} · ${escapeHtml(candidate.name)}</span><span class="mt-1 block text-xs text-slate-500">${escapeHtml(candidate.program)}</span></span>`;
+            card.addEventListener('click', () => {
+                selectedReviewCandidateIds = selected
+                    ? selectedReviewCandidateIds.filter(id => id !== candidate.id)
+                    : [...selectedReviewCandidateIds, candidate.id];
+                renderJudgeReviewStage();
+            });
+            grid.appendChild(card);
+        });
+    }
+    document.querySelectorAll('[data-review-mode]').forEach(button => {
+        const selected = button.dataset.reviewMode === reviewMode;
+        button.classList.toggle('bg-indigo-600', selected);
+        button.classList.toggle('text-white', selected);
+        button.classList.toggle('border', !selected);
+        button.classList.toggle('border-slate-200', !selected);
+        button.classList.toggle('bg-white', !selected);
+        button.classList.toggle('text-slate-700', !selected);
+    });
+}
+
 function renderJudge() {
     renderJudgeLeaderboards();
+    if (activeStage.scoreReviewEnabled) {
+        renderJudgeReviewStage();
+        return;
+    }
+    document.getElementById('judge-review-stage').classList.add('hidden');
     const stageCandidates = getStageCandidates();
     if (stageCandidates.length === 0) {
         document.getElementById('scoring-form').dataset.scoreKey = '';
@@ -171,11 +234,11 @@ function getStoredCriterionValue(score, criterion) {
     return Number(score.criteria?.[criterion.id || criterion.name]?.value ?? score[criterion.name]);
 }
 
-function renderJudgeScoreReview() {
+function renderJudgeScoreReview(candidateIds = selectedReviewCandidateIds) {
     const container = document.getElementById('judge-score-review-list');
     if (!container) return;
     const rows = [];
-    candidates.forEach(candidate => {
+    candidates.filter(candidate => candidateIds.includes(candidate.id)).forEach(candidate => {
         Object.entries(scores[candidate.id] || {}).forEach(([themeId, themeScores]) => {
             themeScores
                 .filter(score => score.judgeId === authenticatedJudge?.id)
@@ -261,9 +324,20 @@ document.getElementById('btn-open-judge-leaderboards').addEventListener('click',
     document.getElementById('judge-leaderboard-modal').showModal();
 });
 document.getElementById('btn-close-judge-leaderboards').addEventListener('click', () => document.getElementById('judge-leaderboard-modal').close());
-document.getElementById('btn-review-judge-scores').addEventListener('click', () => {
-    renderJudgeScoreReview();
-    document.getElementById('judge-score-review-modal').showModal();
+document.querySelectorAll('[data-review-mode]').forEach(button => {
+button.addEventListener('click', () => {
+    reviewMode = button.dataset.reviewMode;
+    selectedReviewCandidateIds = [];
+    renderJudgeReviewStage();
+});
+});
+document.getElementById('btn-open-selected-score-review').addEventListener('click', () => {
+if (selectedReviewCandidateIds.length === 0) {
+    showAppMessage('Select at least one contestant to review.', 'error');
+    return;
+}
+renderJudgeScoreReview();
+document.getElementById('judge-score-review-modal').showModal();
 });
 document.getElementById('btn-close-judge-score-review').addEventListener('click', () => document.getElementById('judge-score-review-modal').close());
 document.getElementById('btn-judge-logout').addEventListener('click', async () => {
