@@ -276,27 +276,30 @@ function openConfirmModal({ title, message, confirmLabel = 'Confirm', onConfirm 
 }
 
 async function resetAdminDataDirect(kind) {
-    const deleteScores = async () => {
-        const { error } = await db.from('scores').delete().not('id', 'is', null);
-        if (error) throw error;
+    const deleteRows = async table => {
+        const { data, error: selectError } = await db.from(table).select('id');
+        if (selectError) throw selectError;
+        const ids = (data || []).map(row => row.id);
+        if (ids.length === 0) return;
+        const { error: deleteError } = await db.from(table).delete().in('id', ids);
+        if (deleteError) throw deleteError;
     };
 
     switch (kind) {
         case 'scores':
-            await deleteScores();
+            await deleteRows('scores');
             break;
         case 'candidates': {
-            await deleteScores();
+            await deleteRows('scores');
             const { error: stageError } = await db.from('active_stage')
                 .update({ active_candidate_id: null, updated_at: new Date().toISOString() })
                 .eq('id', true);
             if (stageError) throw stageError;
-            const { error } = await db.from('candidates').delete().not('id', 'is', null);
-            if (error) throw error;
+            await deleteRows('candidates');
             break;
         }
         case 'themes': {
-            await deleteScores();
+            await deleteRows('scores');
             const { error: stageError } = await db.from('active_stage')
                 .update({
                     active_candidate_id: null,
@@ -305,23 +308,16 @@ async function resetAdminDataDirect(kind) {
                 })
                 .eq('id', true);
             if (stageError) throw stageError;
-            const { error } = await db.from('themes').delete().not('id', 'is', null);
-            if (error) throw error;
+            await deleteRows('themes');
             break;
         }
         case 'score basis':
-            await deleteScores();
-            {
-                const { error } = await db.from('theme_criteria').delete().not('id', 'is', null);
-                if (error) throw error;
-            }
+            await deleteRows('scores');
+            await deleteRows('theme_criteria');
             break;
         case 'judges':
-            await deleteScores();
-            {
-                const { error } = await db.from('judges').delete().not('id', 'is', null);
-                if (error) throw error;
-            }
+            await deleteRows('scores');
+            await deleteRows('judges');
             break;
         default:
             throw new Error(`Unsupported reset type: ${kind}`);
