@@ -557,8 +557,7 @@ document.getElementById('judge-list-body').addEventListener('click', event => {
 document.querySelectorAll('[data-reset-rpc]').forEach(button => {
     button.addEventListener('click', () => resetAdminData(
         button.dataset.resetKind,
-        button.dataset.resetLabel,
-        button.dataset.resetRpc
+        button.dataset.resetLabel
     ));
 });
 

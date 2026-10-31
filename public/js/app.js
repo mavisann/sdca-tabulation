@@ -324,7 +324,7 @@ async function resetAdminDataDirect(kind) {
     }
 }
 
-async function resetAdminData(kind, label, rpcName) {
+async function resetAdminData(kind, label) {
     const confirmed = await openConfirmModal({
         title: `${label}?`,
         message: `This permanently deletes the ${label.toLowerCase()} data. This action cannot be undone.`,
@@ -332,11 +332,7 @@ async function resetAdminData(kind, label, rpcName) {
     });
     if (!confirmed) return;
     try {
-        const { error } = await db.rpc(rpcName);
-        if (error) {
-            if (error.code !== 'PGRST202' && error.code !== '42883') throw error;
-            await resetAdminDataDirect(kind);
-        }
+        await resetAdminDataDirect(kind);
         if (realtimeChannel) {
             await realtimeChannel.send({
                 type: 'broadcast',
