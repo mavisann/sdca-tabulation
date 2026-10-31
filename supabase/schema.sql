@@ -14,7 +14,7 @@ create table if not exists public.active_stage (
 
 alter table public.active_stage alter column current_theme drop not null;
 alter table public.active_stage alter column current_theme drop default;
-
+    
 create table if not exists public.scores (
     id uuid primary key default gen_random_uuid(),
     candidate_id text not null references public.candidates(id) on delete cascade,

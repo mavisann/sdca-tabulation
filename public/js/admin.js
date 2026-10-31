@@ -1,5 +1,5 @@
 const DEFAULT_PHOTO = 'https://placehold.co/240x320/e0e7ff/3730a3?text=Candidate';
-const MAX_IMAGE_SIZE = 1.5 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 50 * 1024 * 1024;
 let previewObjectUrl = null;
 let selectedScorebookCandidateId = null;
 
