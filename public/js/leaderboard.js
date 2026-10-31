@@ -10,7 +10,12 @@ function renderLeaderboard(containerId, { showAverage = false } = {}) {
         return;
     }
 
-    rankedCandidates.forEach((candidate, index) => {
+    ['Mr', 'Ms'].forEach(category => {
+        const section = document.createElement('section');
+        section.innerHTML = `<h3 class="mb-3 text-lg font-extrabold text-slate-900">${category}. rankings</h3>`;
+        const list = document.createElement('div');
+        list.className = 'space-y-2';
+        rankedCandidates.filter(candidate => candidate.category === category).forEach((candidate, index) => {
         const row = document.createElement('article');
         const rank = index + 1;
         const placeLabel = rank === 1 ? 'Champion' : rank === 2 ? 'Runner-up' : rank === 3 ? '3rd place' : `Rank ${rank}`;
@@ -32,6 +37,12 @@ function renderLeaderboard(containerId, { showAverage = false } = {}) {
                 ${showAverage ? `<p class="mt-1 text-xs font-extrabold text-indigo-700">Average Score: ${candidate.totalScore.toFixed(2)}</p>` : ''}
             </div>
         `;
-        container.appendChild(row);
+            list.appendChild(row);
+        });
+        if (!list.children.length) {
+            list.innerHTML = '<p class="py-4 text-sm text-slate-500">No scored candidates.</p>';
+        }
+        section.appendChild(list);
+        container.appendChild(section);
     });
 }

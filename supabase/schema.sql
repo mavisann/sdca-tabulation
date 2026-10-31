@@ -2,16 +2,27 @@ create table if not exists public.candidates (
     id text primary key,
     name text not null,
     program text not null default '',
-    image text not null
+    image text not null,
+    category text not null default 'Mr' check (category in ('Mr', 'Ms'))
 );
+
+alter table public.candidates add column if not exists category text not null default 'Mr';
+alter table public.candidates drop constraint if exists candidates_category_check;
+alter table public.candidates add constraint candidates_category_check check (category in ('Mr', 'Ms'));
 
 create table if not exists public.active_stage (
     id boolean primary key default true check (id is true),
     active_candidate_id text references public.candidates(id) on delete set null,
+    active_candidate_ids jsonb not null default '[]'::jsonb,
+    stage_mode text not null default 'mr' check (stage_mode in ('mr', 'ms', 'program')),
     current_theme text,
     updated_at timestamptz not null default now()
 );
 
+alter table public.active_stage add column if not exists active_candidate_ids jsonb not null default '[]'::jsonb;
+alter table public.active_stage add column if not exists stage_mode text not null default 'mr';
+alter table public.active_stage drop constraint if exists active_stage_stage_mode_check;
+alter table public.active_stage add constraint active_stage_stage_mode_check check (stage_mode in ('mr', 'ms', 'program'));
 alter table public.active_stage alter column current_theme drop not null;
 alter table public.active_stage alter column current_theme drop default;
     

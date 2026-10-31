@@ -57,8 +57,8 @@ function showJudgeWaiting(title, copy) {
 
 function renderJudge() {
     renderJudgeLeaderboards();
-    const candidate = candidates.find(item => item.id === activeStage.activeCandidateId);
-    if (!candidate) {
+    const stageCandidates = getStageCandidates();
+    if (stageCandidates.length === 0) {
         document.getElementById('scoring-form').dataset.scoreKey = '';
         showJudgeWaiting(
             'Waiting for candidate to take the stage...',
@@ -67,18 +67,18 @@ function renderJudge() {
         return;
     }
 
-    const scoreKey = `${candidate.id}_${activeStage.currentTheme}_${activeStage.updatedAt || 'new'}`;
+    const scoreKey = `${stageCandidates.map(candidate => candidate.id).join('-')}_${activeStage.currentTheme}_${activeStage.updatedAt || 'new'}`;
     const form = document.getElementById('scoring-form');
     renderScoreOptions();
-    const hasScored = (scores[candidate.id]?.[activeStage.currentTheme] || [])
+    const hasScored = stageCandidates.every(candidate => (scores[candidate.id]?.[activeStage.currentTheme] || [])
         .some(score => authenticatedJudge?.id
             ? score.judgeId === authenticatedJudge.id
-            : score.judgeName === getJudgeName());
+            : score.judgeName === getJudgeName()));
     if (hasScored) {
         form.dataset.scoreKey = '';
         showJudgeWaiting(
             'Score submitted — awaiting next contestant',
-            `${candidate.name} has already been scored for ${getThemeName(activeStage.currentTheme)} by ${getJudgeName()}. You can continue when the stage manager selects another contestant or theme.`
+            `This group has already been scored for ${getThemeName(activeStage.currentTheme)} by ${getJudgeName()}. You can continue when the stage manager selects another group or theme.`
         );
         return;
     }
@@ -88,20 +88,20 @@ function renderJudge() {
     }
     document.getElementById('judge-active').classList.remove('hidden');
     document.getElementById('judge-waiting').classList.add('hidden');
-    const image = document.getElementById('judge-cand-img');
-    image.src = candidate.image;
-    image.onerror = () => { image.src = JUDGE_PHOTO_FALLBACK; };
-    image.alt = `${candidate.name} portrait`;
-    document.getElementById('judge-cand-id').textContent = candidate.id;
-    document.getElementById('judge-cand-name').textContent = candidate.name;
-    document.getElementById('judge-cand-program').textContent = candidate.program;
+    document.getElementById('judge-stage-candidates').innerHTML = stageCandidates.map(candidate => `
+        <article class="rounded-2xl border-4 border-base-100 bg-base-300 p-3 shadow-sm">
+            <img src="${escapeHtml(candidate.image)}" alt="${escapeHtml(candidate.name)} portrait" class="h-56 w-full rounded-xl object-contain" onerror="this.src='${JUDGE_PHOTO_FALLBACK}'">
+            <p class="mt-3 text-xs font-bold uppercase tracking-wider text-slate-500">${candidate.category} · ${escapeHtml(candidate.id)}</p>
+            <h2 class="mt-1 text-2xl font-extrabold tracking-tight text-slate-950">${escapeHtml(candidate.name)}</h2>
+            <p class="mt-1 text-sm font-medium text-slate-600">${escapeHtml(candidate.program)}</p>
+        </article>`).join('');
     document.getElementById('judge-theme-badge').textContent = getThemeName(activeStage.currentTheme);
 }
 
 async function submitScores(event) {
     event.preventDefault();
-    const candidate = candidates.find(item => item.id === activeStage.activeCandidateId);
-    if (!candidate) {
+    const stageCandidates = getStageCandidates();
+    if (stageCandidates.length === 0) {
         renderJudge();
         return;
     }
@@ -126,13 +126,13 @@ async function submitScores(event) {
     values.submittedAt = new Date().toISOString();
     const confirmed = await openConfirmModal({
         title: 'Confirm score submission',
-        message: `Submit your scores for ${candidate.name}? You will not be able to score this candidate and theme again.`,
+        message: `Submit your scores for ${stageCandidates.map(candidate => candidate.name).join(' and ')}? You will not be able to score this group and theme again.`,
         confirmLabel: 'Submit score'
     });
     if (!confirmed) return;
     try {
         const scoreValues = criteria.map(criterion => values[criterion.id || criterion.name]);
-        const { error } = await db.from('scores').insert({
+        const { error } = await db.from('scores').insert(stageCandidates.map(candidate => ({
             candidate_id: candidate.id,
             theme: activeStage.currentTheme,
             judge_id: authenticatedJudge.id,
@@ -151,7 +151,7 @@ async function submitScores(event) {
             remarks: values.remarks,
             total: Number(values.total.toFixed(2)),
             submitted_at: values.submittedAt
-        });
+        })));
         if (error) throw error;
         await syncData();
         renderAll();
@@ -164,17 +164,17 @@ async function submitScores(event) {
 
 document.getElementById('scoring-form').addEventListener('submit', submitScores);
 function renderJudgeLeaderboards() {
-    const personal = document.getElementById('judge-leaderboard');
-    const overall = document.getElementById('judge-overall-leaderboard');
-    if (!personal || !overall) return;
-    const ranked = getJudgeRankedCandidates(authenticatedJudge?.id);
-    personal.innerHTML = ranked.length
-        ? ranked.map((candidate, index) => `<article class="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-indigo-50 text-sm font-black text-indigo-700">${index + 1}</span><div class="min-w-0 flex-1"><p class="truncate text-sm font-bold text-slate-800">${escapeHtml(candidate.name)}</p><p class="truncate text-xs text-slate-500">${escapeHtml(candidate.program)}</p></div><strong class="text-sm text-indigo-700">${candidate.totalScore.toFixed(2)}</strong></article>`).join('')
-        : '<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Submit a score to build your leaderboard.</p>';
-    const overallRanked = getOverallRankedCandidates();
-    overall.innerHTML = overallRanked.length
-        ? overallRanked.map((candidate, index) => `<article class="flex items-center gap-3 rounded-xl border ${index === 0 && candidate.scored ? 'border-amber-200 bg-amber-50' : 'border-slate-100 bg-white'} p-3"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg ${index === 0 && candidate.scored ? 'bg-amber-200 text-amber-900' : 'bg-slate-100 text-slate-700'} text-sm font-black">${index + 1}</span><div class="min-w-0 flex-1"><p class="truncate text-sm font-bold text-slate-800">${escapeHtml(candidate.name)}</p><p class="truncate text-xs text-slate-500">${escapeHtml(candidate.program)}</p></div></article>`).join('')
-        : '<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No candidates available.</p>';
+    const renderList = (containerId, ranked, scoreLabel) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = ranked.length
+            ? ranked.map((candidate, index) => `<article class="flex items-center gap-3 rounded-xl border ${index === 0 ? 'border-amber-300 bg-amber-50 shadow-md' : 'border-slate-100 bg-white'} p-3"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg ${index === 0 ? 'bg-amber-200 text-amber-900' : 'bg-indigo-50 text-indigo-700'} text-sm font-black">${index + 1}</span><div class="min-w-0 flex-1"><p class="truncate text-sm font-bold text-slate-800">${escapeHtml(candidate.name)}</p><p class="truncate text-xs text-slate-500">${escapeHtml(candidate.program)}</p></div><strong class="text-sm text-indigo-700">${scoreLabel ? candidate.totalScore.toFixed(2) : candidate.averageScore.toFixed(2)}</strong></article>`).join('')
+            : '<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No scored candidates yet.</p>';
+    };
+    ['Mr', 'Ms'].forEach(category => {
+        renderList(`judge-personal-${category.toLowerCase()}`, getJudgeRankedCandidates(authenticatedJudge?.id).filter(candidate => candidate.category === category), true);
+        renderList(`judge-overall-${category.toLowerCase()}`, getOverallRankedCandidates().filter(candidate => candidate.category === category && candidate.scored), false);
+    });
 }
 
 document.getElementById('btn-open-judge-leaderboards').addEventListener('click', () => {

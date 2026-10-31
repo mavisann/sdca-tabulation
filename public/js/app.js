@@ -2,7 +2,7 @@ let candidates = [];
 let themes = [];
 let themeCriteria = {};
 let judges = [];
-let activeStage = { activeCandidateId: null, currentTheme: null, updatedAt: null };
+let activeStage = { activeCandidateId: null, activeCandidateIds: [], stageMode: 'mr', currentTheme: null, updatedAt: null };
 let scores = {};
 let currentRole = null;
 let db = null;
@@ -51,7 +51,8 @@ async function syncData() {
         id: candidate.id,
         name: candidate.name,
         program: candidate.program || '',
-        image: candidate.image || ''
+        image: candidate.image || '',
+        category: candidate.category === 'Ms' ? 'Ms' : 'Mr'
     }));
 
     themes = (themeResult.data || []).map(theme => ({
@@ -75,10 +76,14 @@ async function syncData() {
     activeStage = stage
         ? {
             activeCandidateId: stage.active_candidate_id,
+            activeCandidateIds: Array.isArray(stage.active_candidate_ids)
+                ? stage.active_candidate_ids
+                : stage.active_candidate_id ? [stage.active_candidate_id] : [],
+            stageMode: ['mr', 'ms', 'program'].includes(stage.stage_mode) ? stage.stage_mode : 'mr',
             currentTheme: stage.current_theme || null,
             updatedAt: stage.updated_at || null
         }
-        : { activeCandidateId: null, currentTheme: null, updatedAt: null };
+        : { activeCandidateId: null, activeCandidateIds: [], stageMode: 'mr', currentTheme: null, updatedAt: null };
 
     scores = {};
     (scoreResult.data || []).forEach(score => {
@@ -241,6 +246,13 @@ function getJudgeRankedCandidates(judgeId) {
         ));
 }
 
+function getStageCandidates() {
+    const ids = activeStage.activeCandidateIds?.length
+        ? activeStage.activeCandidateIds
+        : activeStage.activeCandidateId ? [activeStage.activeCandidateId] : [];
+    return ids.map(id => candidates.find(candidate => candidate.id === id)).filter(Boolean);
+}
+
 function openConfirmModal({ title, message, confirmLabel = 'Confirm', onConfirm }) {
     const modal = document.getElementById('confirm-modal');
     if (!modal) return Promise.resolve(window.confirm(message));
@@ -292,7 +304,12 @@ async function resetAdminDataDirect(kind) {
         case 'candidates': {
             await deleteRows('scores');
             const { error: stageError } = await db.from('active_stage')
-                .update({ active_candidate_id: null, updated_at: new Date().toISOString() })
+                .update({
+                    active_candidate_id: null,
+                    active_candidate_ids: [],
+                    stage_mode: 'mr',
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', true);
             if (stageError) throw stageError;
             await deleteRows('candidates');
@@ -303,6 +320,8 @@ async function resetAdminDataDirect(kind) {
             const { error: stageError } = await db.from('active_stage')
                 .update({
                     active_candidate_id: null,
+                    active_candidate_ids: [],
+                    stage_mode: 'mr',
                     current_theme: null,
                     updated_at: new Date().toISOString()
                 })

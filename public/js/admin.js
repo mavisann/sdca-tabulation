@@ -17,6 +17,13 @@ function renderAdmin() {
     renderAdminCandidates();
     renderAdminStage();
     renderLeaderboard('admin-leaderboard', { showAverage: true });
+    document.querySelectorAll('[data-stage-mode]').forEach(button => {
+        const selected = button.dataset.stageMode === (activeStage.stageMode || 'mr');
+        button.classList.toggle('bg-indigo-600', selected);
+        button.classList.toggle('text-white', selected);
+        button.classList.toggle('bg-white', !selected);
+        button.classList.toggle('text-slate-700', !selected);
+    });
 }
 
 function renderAdminTabs() {
@@ -275,7 +282,8 @@ function renderAdminCandidates() {
         row.innerHTML = `
             <td class="whitespace-nowrap px-4 py-3 text-sm font-semibold text-slate-700">${escapeHtml(candidate.id)}</td>
             <td class="px-4 py-3"><img src="${escapeHtml(candidate.image)}" alt="" class="h-16 w-12 rounded-lg bg-slate-100 object-contain" onerror="this.src='${DEFAULT_PHOTO}'"></td>
-            <td class="min-w-40 px-4 py-3"><p class="font-semibold text-slate-800">${escapeHtml(candidate.name)}</p><p class="text-xs text-slate-500">${escapeHtml(candidate.program)}</p></td>
+            <td class="min-w-40 px-4 py-3"><p class="font-semibold text-slate-800">${escapeHtml(candidate.name)}</p><p class="text-xs text-slate-500">${candidate.category} · ${escapeHtml(candidate.program)}</p></td>
+            <td class="px-4 py-3 text-sm font-bold text-indigo-700">${candidate.category}</td>
             <td class="whitespace-nowrap px-4 py-3">
                 <div class="flex gap-2">
                     <button type="button" data-edit-id="${escapeHtml(candidate.id)}" class="rounded-lg bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Edit</button>
@@ -291,13 +299,38 @@ function renderAdminStage() {
     if (!grid) return;
     grid.replaceChildren();
 
-    if (candidates.length === 0) {
+    const mode = activeStage.stageMode || 'mr';
+    const visibleCandidates = mode === 'program'
+        ? candidates
+        : candidates.filter(candidate => candidate.category.toLowerCase() === mode);
+    if (visibleCandidates.length === 0) {
         grid.innerHTML = '<p class="col-span-full py-8 text-center text-sm text-slate-500">Add candidates to make them available on stage.</p>';
         return;
     }
 
-    candidates.forEach(candidate => {
-        const isActive = activeStage.activeCandidateId === candidate.id;
+    if (mode === 'program') {
+        const programs = [...new Set(candidates.map(candidate => candidate.program))];
+        programs.forEach(program => {
+            const programCandidates = candidates.filter(candidate => candidate.program === program);
+            const isActive = programCandidates.every(candidate => activeStage.activeCandidateIds.includes(candidate.id));
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.dataset.stageProgram = program;
+            card.setAttribute('aria-pressed', String(isActive));
+            card.className = `rounded-2xl border-2 bg-white p-4 text-left transition ${
+                isActive ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-100 hover:border-indigo-200'
+            }`;
+            card.innerHTML = `<span class="block text-lg font-extrabold text-slate-900">${escapeHtml(program)}</span>
+                <span class="mt-1 block text-xs text-slate-500">${programCandidates.map(candidate => `${candidate.category} · ${escapeHtml(candidate.name)}`).join(' / ')}</span>
+                ${isActive ? '<span class="mt-3 inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-indigo-700">On stage</span>' : ''}`;
+            grid.appendChild(card);
+        });
+        return;
+    }
+
+    visibleCandidates.forEach(candidate => {
+        const isActive = activeStage.activeCandidateIds.includes(candidate.id)
+            || activeStage.activeCandidateId === candidate.id;
         const card = document.createElement('button');
         card.type = 'button';
         card.dataset.stageId = candidate.id;
@@ -309,7 +342,7 @@ function renderAdminStage() {
             <img src="${escapeHtml(candidate.image)}" alt="" class="h-56 w-full bg-slate-100 object-contain sm:h-72" onerror="this.src='${DEFAULT_PHOTO}'">
             <span class="block p-3">
                 <span class="block truncate text-sm font-bold text-slate-800">${escapeHtml(candidate.name)}</span>
-                <span class="block truncate text-xs text-slate-500">${escapeHtml(candidate.program)}</span>
+                <span class="block truncate text-xs text-slate-500">${candidate.category} · ${escapeHtml(candidate.program)}</span>
                 ${isActive ? '<span class="mt-2 inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-indigo-700">On stage</span>' : ''}
             </span>`;
         grid.appendChild(card);
@@ -364,6 +397,7 @@ async function saveCandidate(event) {
     const id = document.getElementById('candidate-id').value;
     const name = document.getElementById('candidate-name').value.trim();
     const program = document.getElementById('candidate-program').value.trim();
+    const category = document.getElementById('candidate-category').value;
     const imageUrl = document.getElementById('candidate-image').value.trim();
     const photoFile = document.getElementById('candidate-photo-file').files[0];
     const existing = candidates.find(candidate => candidate.id === id);
@@ -390,10 +424,10 @@ async function saveCandidate(event) {
     }
 
     try {
-        const candidate = { id: id || createCandidateId(), name, program, image };
+        const candidate = { id: id || createCandidateId(), name, program, category, image };
         const result = existing
             ? await db.from('candidates')
-                .update({ name, program, image })
+                .update({ name, program, category, image })
                 .eq('id', id)
             : await db.from('candidates').insert(candidate);
         if (result.error) throw result.error;
@@ -412,6 +446,7 @@ function editCandidate(id) {
     document.getElementById('candidate-id').value = candidate.id;
     document.getElementById('candidate-name').value = candidate.name;
     document.getElementById('candidate-program').value = candidate.program;
+    document.getElementById('candidate-category').value = candidate.category;
     document.getElementById('candidate-image').value = candidate.image.startsWith('data:')
         ? ''
         : candidate.image;
@@ -450,7 +485,9 @@ async function persistStage(nextStage) {
     try {
         const { error } = await db.from('active_stage').upsert({
             id: true,
-            active_candidate_id: nextStage.activeCandidateId,
+            active_candidate_id: nextStage.activeCandidateIds?.[0] || nextStage.activeCandidateId || null,
+            active_candidate_ids: nextStage.activeCandidateIds || [],
+            stage_mode: nextStage.stageMode || 'mr',
             current_theme: nextStage.currentTheme,
             updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
@@ -470,11 +507,20 @@ function updateStageTheme() {
 }
 
 function setStageCandidate(id) {
-    return persistStage({ ...activeStage, activeCandidateId: id });
+    return persistStage({ ...activeStage, activeCandidateId: id, activeCandidateIds: [id] });
+}
+
+function setStageMode(mode) {
+    return persistStage({ ...activeStage, stageMode: mode, activeCandidateId: null, activeCandidateIds: [] });
+}
+
+function setStageProgram(program) {
+    const ids = candidates.filter(candidate => candidate.program === program).map(candidate => candidate.id);
+    return persistStage({ ...activeStage, activeCandidateId: ids[0] || null, activeCandidateIds: ids });
 }
 
 function clearStage() {
-    return persistStage({ ...activeStage, activeCandidateId: null });
+    return persistStage({ ...activeStage, activeCandidateId: null, activeCandidateIds: [] });
 }
 
 document.getElementById('candidate-form').addEventListener('submit', saveCandidate);
@@ -487,6 +533,11 @@ document.getElementById('candidate-list-body').addEventListener('click', event =
 document.getElementById('admin-stage-grid').addEventListener('click', event => {
     const card = event.target.closest('[data-stage-id]');
     if (card) setStageCandidate(card.dataset.stageId);
+    const programCard = event.target.closest('[data-stage-program]');
+    if (programCard) setStageProgram(programCard.dataset.stageProgram);
+});
+document.querySelectorAll('[data-stage-mode]').forEach(button => {
+    button.addEventListener('click', () => setStageMode(button.dataset.stageMode));
 });
 document.getElementById('candidate-image').addEventListener('input', () => {
     if (document.getElementById('candidate-image').value.trim()) {

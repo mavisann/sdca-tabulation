@@ -64,13 +64,20 @@
                         <input id="candidate-program" name="program" required maxlength="120" placeholder="e.g. BS Nursing" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
                     </div>
                     <div>
+                        <label for="candidate-category" class="mb-1.5 block text-sm font-semibold text-slate-700">Category</label>
+                        <select id="candidate-category" name="category" required class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
+                            <option value="Mr">Mr.</option>
+                            <option value="Ms">Ms.</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="candidate-image" class="mb-1.5 block text-sm font-semibold text-slate-700">Photo URL</label>
                         <input id="candidate-image" name="imageUrl" type="url" placeholder="https://example.com/photo.jpg" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
                     </div>
                     <div>
                         <label for="candidate-photo-file" class="mb-1.5 block text-sm font-semibold text-slate-700">Or upload a photo</label>
                         <input id="candidate-photo-file" name="photo" type="file" accept="image/*" class="block w-full cursor-pointer rounded-xl border border-slate-200 bg-white text-sm text-slate-600 file:mr-3 file:border-0 file:bg-indigo-50 file:px-3 file:py-2.5 file:font-semibold file:text-indigo-700 hover:file:bg-indigo-100">
-                        <p class="mt-1.5 text-xs text-slate-500">Image files up to 1.5 MB are saved with candidate details.</p>
+                        <p class="mt-1.5 text-xs text-slate-500">Image files up to 50 MB are saved with candidate details.</p>
                     </div>
                     <div class="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 p-3">
                         <img id="candidate-photo-preview" src="https://placehold.co/240x320/e0e7ff/3730a3?text=Candidate" alt="Candidate photo preview" class="h-24 w-20 rounded-lg bg-slate-100 object-contain">
@@ -89,7 +96,7 @@
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left">
-                            <thead><tr class="text-[11px] uppercase tracking-wide text-slate-400"><th class="px-4 py-2">Number</th><th class="px-4 py-2">Photo</th><th class="px-4 py-2">Candidate</th><th class="px-4 py-2">Actions</th></tr></thead>
+                            <thead><tr class="text-[11px] uppercase tracking-wide text-slate-400"><th class="px-4 py-2">Number</th><th class="px-4 py-2">Photo</th><th class="px-4 py-2">Candidate</th><th class="px-4 py-2">Category</th><th class="px-4 py-2">Actions</th></tr></thead>
                             <tbody id="candidate-list-body"></tbody>
                         </table>
                     </div>
@@ -104,6 +111,11 @@
                             <p class="mt-1 text-sm text-slate-500">Select the theme, then push a contestant to the stage.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+                                <button type="button" data-stage-mode="mr" class="rounded-lg px-3 py-2 text-sm font-bold text-slate-700">Mr.</button>
+                                <button type="button" data-stage-mode="ms" class="rounded-lg px-3 py-2 text-sm font-bold text-slate-700">Ms.</button>
+                                <button type="button" data-stage-mode="program" class="rounded-lg px-3 py-2 text-sm font-bold text-slate-700">By program</button>
+                            </div>
                             <label for="stage-theme" class="text-sm font-semibold text-slate-600">Theme</label>
                             <select id="stage-theme" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50">
                                 <option value="">No theme selected</option>
