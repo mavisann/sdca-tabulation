@@ -191,6 +191,7 @@ async function saveJudge(event) {
     const name = document.getElementById('judge-account-name').value.trim();
     const accessCode = document.getElementById('judge-account-code').value.trim().toUpperCase();
     const id = document.getElementById('judge-id').value || `judge-${slugify(name)}`;
+    const existing = judges.find(judge => judge.id === id);
     try {
         const { error } = await db.from('judges').upsert({
             id,
@@ -199,6 +200,12 @@ async function saveJudge(event) {
             active: document.getElementById('judge-account-active').checked
         }, { onConflict: 'id' });
         if (error) throw error;
+        if (existing && existing.name !== name) {
+            const { error: scoreError } = await db.from('scores')
+                .update({ judge_name: name })
+                .eq('judge_id', id);
+            if (scoreError) throw scoreError;
+        }
         document.getElementById('judge-form').reset();
         document.getElementById('judge-id').value = '';
         document.getElementById('judge-account-active').checked = true;
@@ -370,7 +377,7 @@ async function saveCandidate(event) {
         return;
     }
     if (photoFile && photoFile.size > MAX_IMAGE_SIZE) {
-        showAppMessage('Choose an image smaller than 1.5 MB.', 'error');
+        showAppMessage('Choose an image smaller than 50 MB.', 'error');
         return;
     }
 

@@ -85,10 +85,11 @@ async function syncData() {
         if (!candidates.some(candidate => candidate.id === score.candidate_id)) return;
         scores[score.candidate_id] ??= {};
         scores[score.candidate_id][score.theme] ??= [];
+        const currentJudge = judges.find(judge => judge.id === score.judge_id);
         scores[score.candidate_id][score.theme].push({
             id: score.id,
             judgeId: score.judge_id || null,
-            judgeName: score.judge_name || 'Judge 1',
+            judgeName: currentJudge?.name || score.judge_name || 'Judge 1',
             poise: Number(score.poise),
             presence: Number(score.presence),
             qa: Number(score.qa),
@@ -274,6 +275,59 @@ function openConfirmModal({ title, message, confirmLabel = 'Confirm', onConfirm 
     });
 }
 
+async function resetAdminDataDirect(kind) {
+    const deleteScores = async () => {
+        const { error } = await db.from('scores').delete().not('id', 'is', null);
+        if (error) throw error;
+    };
+
+    switch (kind) {
+        case 'scores':
+            await deleteScores();
+            break;
+        case 'candidates': {
+            await deleteScores();
+            const { error: stageError } = await db.from('active_stage')
+                .update({ active_candidate_id: null, updated_at: new Date().toISOString() })
+                .eq('id', true);
+            if (stageError) throw stageError;
+            const { error } = await db.from('candidates').delete().not('id', 'is', null);
+            if (error) throw error;
+            break;
+        }
+        case 'themes': {
+            await deleteScores();
+            const { error: stageError } = await db.from('active_stage')
+                .update({
+                    active_candidate_id: null,
+                    current_theme: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', true);
+            if (stageError) throw stageError;
+            const { error } = await db.from('themes').delete().not('id', 'is', null);
+            if (error) throw error;
+            break;
+        }
+        case 'score basis':
+            await deleteScores();
+            {
+                const { error } = await db.from('theme_criteria').delete().not('id', 'is', null);
+                if (error) throw error;
+            }
+            break;
+        case 'judges':
+            await deleteScores();
+            {
+                const { error } = await db.from('judges').delete().not('id', 'is', null);
+                if (error) throw error;
+            }
+            break;
+        default:
+            throw new Error(`Unsupported reset type: ${kind}`);
+    }
+}
+
 async function resetAdminData(kind, label, rpcName) {
     const confirmed = await openConfirmModal({
         title: `${label}?`,
@@ -281,22 +335,25 @@ async function resetAdminData(kind, label, rpcName) {
         confirmLabel: label
     });
     if (!confirmed) return;
-    const { error } = await db.rpc(rpcName);
-    if (error) {
-        console.error(`Supabase could not ${label.toLowerCase()}:`, error);
-        showAppMessage(`Could not ${label.toLowerCase()}: ${error.message || 'Please run the latest schema migration.'}`, 'error');
-        return;
+    try {
+        const { error } = await db.rpc(rpcName);
+        if (error) {
+            if (error.code !== 'PGRST202' && error.code !== '42883') throw error;
+            await resetAdminDataDirect(kind);
+        }
+        if (realtimeChannel) {
+            await realtimeChannel.send({
+                type: 'broadcast',
+                event: 'admin-data-reset',
+                payload: { kind, resetAt: new Date().toISOString() }
+            });
+        }
+        await syncData();
+        renderAll();
+        showAppMessage(`${label} completed for all connected pages.`);
+    } catch (error) {
+        handleWriteError(error, `reset the ${label.toLowerCase()}`);
     }
-    if (realtimeChannel) {
-        await realtimeChannel.send({
-            type: 'broadcast',
-            event: 'admin-data-reset',
-            payload: { kind, resetAt: new Date().toISOString() }
-        });
-    }
-    await syncData();
-    renderAll();
-    showAppMessage(`${label} completed for all connected pages.`);
 }
 
 function getRankedCandidates({ scoredOnly = false } = {}) {
